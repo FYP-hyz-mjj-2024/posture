@@ -1,3 +1,5 @@
+capture_size = [640, 480]
+
 config = [
     "Nose",
     "Left_eye_inner",

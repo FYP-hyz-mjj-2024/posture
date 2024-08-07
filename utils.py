@@ -10,7 +10,7 @@ def get_detection_results(frame, model):
     Get the detection results for this frame with the given model.
     :param frame: An image frame from any source acquired from opencv-python.
     :param model: A mediapipe pose detection model acquired with mp.solutions.pose.
-    :return: The original image fraame
+    :return: The original image frame.
     """
     # Re-color image: BGR (opencv preferred) -> RGB (mediapipe preferred)
     image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -73,14 +73,6 @@ def calc_angle_lm(landmarks, edge_lm_names, mid_lm_name):
         [get_landmark_coords(landmarks, n1), get_landmark_coords(landmarks, n2)],
         get_landmark_coords(landmarks, nm)
     )
-
-
-tg = [
-    (["name1", "name2"], "namemid"),
-    (["name1", "name2"], "namemid"),
-    (["name1", "name2"], "namemid"),
-    (["name1", "name2"], "namemid"),
-]
 
 
 def gather_angles(landmarks, targets):
