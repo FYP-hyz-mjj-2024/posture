@@ -38,6 +38,9 @@ def process_one_frame(frame, model, mp_drawing, connections, window_name="Untitl
     utils.render_results(frame, mp_drawing, results, connections, window_name)
 
     if key_coord_angles is not None:
+        # Drop coordinates to save space. Coordinate is used only to draw on the canvas.
+        for key_coord_angle in key_coord_angles:
+            key_coord_angle.pop("coord")
         key_coord_angles = json.dumps(key_coord_angles, indent=4)
 
     return key_coord_angles
