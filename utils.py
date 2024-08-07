@@ -91,6 +91,31 @@ def calc_angle(edge_points, mid_point):
     return angle
 
 
+def calc_angle3D(edge_points, mid_point):
+    """
+    Calculate the 3D-angle based on the given edge points and middle point.
+    :param edge_points: The edge points of the angle.
+    :param mid_point: The middle point of the angle, where the angle will be computed.
+    :return: The degree value of the angle.
+    """
+    # Left, Right
+    p1, p2 = [np.array(pt) for pt in edge_points]
+
+    # Mid
+    m = np.array(mid_point)
+
+    # Two vectors
+    _v1, _v2 = p1 - m, p2 - m
+    v1, v2 = _v1 / np.linalg.norm(_v1), _v2 / np.linalg.norm(_v2)
+
+    # Dot Product
+    dot_prod = np.dot(v1, v2)
+    angle_rad = np.arccos(np.clip(dot_prod, -1.0, 1.0))
+    angle_deg = np.degrees(angle_rad)
+
+    return angle_deg
+
+
 def calc_angle_lm(landmarks, edge_lm_names, mid_lm_name):
     """
     Calculate the angle based on the given edge landmarks and the middle landmark.
