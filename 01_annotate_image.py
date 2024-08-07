@@ -1,3 +1,11 @@
+"""
+01. Annotate image.
+@author: Huang Yanzhen, Mai Jiajun
+This file is used to annotate images. By annotate, we mean to extract target values from images using posture detection.
+The target values are numerical to fit into further model training, e.g., the angle of the elbow, etc.
+We don't want extra information from the images to prevent over-fitting.
+"""
+
 import os
 import utils
 import json
@@ -113,7 +121,7 @@ def demo():
 
 
 if __name__ == "__main__":
-    demo()
+    # demo()
 
-    # batch_annotate_images("./data/train/img/using", "./data/train/angles/using")
-    # batch_annotate_images("./data/train/img/not_using", "./data/train/angles/not_using")
+    batch_annotate_images("./data/train/img/using", "./data/train/angles/using")
+    batch_annotate_images("./data/train/img/not_using", "./data/train/angles/not_using")
