@@ -110,6 +110,6 @@ def render_angles(frame, landmarks, key_coord_angles):
         cv2.putText(
             frame,
             str(round(key_coord_angle["angle"], 2)),
-            tuple(np.multiply(key_coord_angle["coord"][:2], [640, 480]).astype(int)),
+            tuple(np.multiply(key_coord_angle["coord"][:2], config.capture_size).astype(int)),
             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA
         )

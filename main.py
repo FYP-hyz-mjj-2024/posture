@@ -2,6 +2,7 @@ import cv2
 import mediapipe as mp
 import numpy as np
 
+import config
 import utils
 
 # Drawing Utilities
@@ -20,6 +21,9 @@ targets = [
 # Setup mediapipe Instance
 with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
     cap = cv2.VideoCapture(0)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, config.capture_size[0])
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, config.capture_size[1])
+
     while True:
         ret, frame = cap.read()
 
