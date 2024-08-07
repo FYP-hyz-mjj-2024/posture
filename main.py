@@ -111,4 +111,5 @@ def demo():
 
 if __name__ == "__main__":
     # demo()
-    batch_annotate_images("./data/train/img", "./data/train/angles")
+    batch_annotate_images("./data/train/img/using", "./data/train/angles/using")
+    batch_annotate_images("./data/train/img/not_using", "./data/train/angles/not_using")
