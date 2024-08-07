@@ -8,12 +8,15 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, classification_report
+import matplotlib.pyplot as plt
 
 
-def batch_get_data(data_dir, label):
+def batch_get_data(data_dir, label, limit_data_num=None):
     people = []
     for root, _, files in os.walk(data_dir):
-        for file_name in files:
+        for i, file_name in enumerate(files):
+            if limit_data_num is not None and i == limit_data_num:
+                break
             if not file_name.endswith(".json"):
                 continue
             file_path = os.path.join(root, file_name)
@@ -25,7 +28,7 @@ def batch_get_data(data_dir, label):
     return people
 
 
-def get_training_data(dir_to_data, possible_labels):
+def get_training_data(dir_to_data, possible_labels, limit_data_num):
     """
     Suppose there are n datapoints in the dataset. Each has m features.
     Training data structure:
@@ -43,7 +46,7 @@ def get_training_data(dir_to_data, possible_labels):
     # Extract training data from json
     _train_data = []
     for label in possible_labels:
-        _train_data += batch_get_data(os.path.join(dir_to_data, label), label)
+        _train_data += batch_get_data(os.path.join(dir_to_data, label), label, limit_data_num)
 
     # Shuffle data
     random.shuffle(_train_data)
@@ -64,12 +67,12 @@ def get_training_data(dir_to_data, possible_labels):
     return train_data
 
 
-def train_model():
+def train_model(limit_data_num=None):
 
     """ Get Training Data"""
-    data = get_training_data("./data/train/angles/", ["using", "not_using"])
-    for key in data.keys():
-        print(f"{key} (len={len(data[key])}): {data[key]}")
+    data = get_training_data("./data/train/angles/", ["using", "not_using"], limit_data_num)
+    # for key in data.keys():
+    #     print(f"{key} (len={len(data[key])}): {data[key]}")
 
     df = pd.DataFrame(data)
 
@@ -94,8 +97,29 @@ def train_model():
     accuracy = accuracy_score(y_test, y_pred)
     report = classification_report(y_test, y_pred)
 
-    print(f"Accuracy: {accuracy}")
-    print(f"Report: {report}")
+    # print(f"Accuracy: {accuracy}")
+    # print(f"Report: {report}")
+    return accuracy
 
 
-train_model()
+num_iter = 1000
+iterations = []
+accuracies = []
+for i in range(num_iter):
+    acc = train_model()
+    print(f"Iteration {i}: Accuracy: {acc}")
+    iterations.append(i)
+    accuracies.append(acc)
+
+mean = np.mean(accuracies)
+std_dev = np.std(accuracies)
+
+plt.plot(iterations, accuracies, label=f"Training Accuracies, Std Dev={round(std_dev, 2)}")
+plt.plot(iterations, [mean for _ in range(len(iterations))], label=f"Mean")
+plt.title("Training Accuracies")
+plt.xlabel("Training Iterations")
+plt.ylabel("Training Accuracy")
+plt.legend()
+plt.grid(True)
+plt.show()
+
