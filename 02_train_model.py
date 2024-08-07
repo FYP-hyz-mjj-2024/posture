@@ -25,7 +25,7 @@ def batch_get_data(data_dir, label):
     return people
 
 
-def get_training_data():
+def get_training_data(dir_to_data, possible_labels):
     """
     Suppose there are n datapoints in the dataset. Each has m features.
     Training data structure:
@@ -40,14 +40,12 @@ def get_training_data():
     :return:
     """
 
-    possible_labels = ["not_using", "using"]
-
     # Extract training data from json
-    train_not_using = batch_get_data("./data/train/angles/not_using", "not_using")
-    train_using = batch_get_data("./data/train/angles/using", "using")
+    _train_data = []
+    for label in possible_labels:
+        _train_data += batch_get_data(os.path.join(dir_to_data, label), label)
 
-    # Concat the data and shuffle
-    _train_data = train_not_using + train_using
+    # Shuffle data
     random.shuffle(_train_data)
 
     # Create scikit-learn data
@@ -66,33 +64,38 @@ def get_training_data():
     return train_data
 
 
-""" Get Training Data"""
-data = get_training_data()
-for key in data.keys():
-    print(f"{key} (len={len(data[key])}): {data[key]}")
+def train_model():
 
-df = pd.DataFrame(data)
+    """ Get Training Data"""
+    data = get_training_data("./data/train/angles/", ["using", "not_using"])
+    for key in data.keys():
+        print(f"{key} (len={len(data[key])}): {data[key]}")
 
-# Split the data into features and labels
-x = df.iloc[:, :-1].values
-y = df.iloc[:, -1].values
+    df = pd.DataFrame(data)
 
-# Split data into train and test
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
+    # Split the data into features and labels
+    x = df.iloc[:, :-1].values
+    y = df.iloc[:, -1].values
 
-# Standardize data
-scaler = StandardScaler()
-x_train = scaler.fit_transform(x_train)
-x_test = scaler.transform(x_test)
+    # Split data into train and test
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
 
-# Train the Model
-model = RandomForestClassifier(n_estimators=100, random_state=42)
-model.fit(x_train, y_train)
+    # Standardize data
+    scaler = StandardScaler()
+    x_train = scaler.fit_transform(x_train)
+    x_test = scaler.transform(x_test)
 
-# Evaluate the Model
-y_pred = model.predict(x_test)
-accuracy = accuracy_score(y_test, y_pred)
-report = classification_report(y_test, y_pred)
+    # Train the Model
+    model = RandomForestClassifier(n_estimators=100, random_state=42)
+    model.fit(x_train, y_train)
 
-print(f"Accuracy: {accuracy}")
-print(f"Report: {report}")
+    # Evaluate the Model
+    y_pred = model.predict(x_test)
+    accuracy = accuracy_score(y_test, y_pred)
+    report = classification_report(y_test, y_pred)
+
+    print(f"Accuracy: {accuracy}")
+    print(f"Report: {report}")
+
+
+train_model()
