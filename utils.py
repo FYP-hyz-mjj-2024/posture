@@ -160,16 +160,17 @@ def render_results(frame, mp_drawing, results, connections, window_name):
     cv2.imshow(window_name, frame)
 
 
-def process_data(data):
+def process_data(data, path=config.opt["save_path"]):
     """
     Process the retrieved angles.
     :param data: The angles.
+    :param path: The save path of the file.
     :return: None.
     """
     if data is None or not config.opt["save_results"]:
         return
 
-    with open(config.opt["save_path"], "a") as f:
+    with open(path, "a") as f:
         f.write(data)
 
 
