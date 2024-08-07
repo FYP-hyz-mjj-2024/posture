@@ -56,3 +56,6 @@ Share
 Edit
 Follow
 
+# Raw training image data
+data/train/img/
+data/test/img/

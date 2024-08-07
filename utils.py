@@ -34,6 +34,10 @@ def init_capture(code=0):
     return cap
 
 
+def init_img(file_path):
+    return cv2.imread(file_path)
+
+
 def get_detection_results(frame, model):
     """
     Get the detection results for this frame with the given model.
@@ -119,7 +123,7 @@ def gather_angles(landmarks, targets):
             edge_lm_names, md_lm_name = target
             angle = calc_angle_lm(landmarks, edge_lm_names, md_lm_name)
             key_coord = get_landmark_coords(landmarks, md_lm_name)
-            key_coord_angles.append({"coord": key_coord, "angle": angle})
+            key_coord_angles.append({"key": md_lm_name, "coord": key_coord, "angle": angle})
         except Exception as e:
             print(e)
             continue
@@ -160,18 +164,18 @@ def render_results(frame, mp_drawing, results, connections, window_name):
     cv2.imshow(window_name, frame)
 
 
-def process_data(data, path=config.opt["save_path"]):
+def process_data(data, path=None):
     """
     Process the retrieved angles.
     :param data: The angles.
     :param path: The save path of the file.
     :return: None.
     """
-    if data is None or not config.opt["save_results"]:
+    if data is None or path is None:
         return
 
-    with open(path, "a") as f:
-        f.write(data)
+    with open(path, "w") as f:
+        f.write(str(data))
 
 
 def break_loop(show_preview=False):
