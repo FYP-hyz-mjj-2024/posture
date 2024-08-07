@@ -1,6 +1,14 @@
 capture_size = [640, 480]
 
-config = [
+opt = {
+    "min_detection_confidence": 0.5,
+    "min_tracking_confidence": 0.5,
+    "show_frame_preview": False,
+    "save_results": False,
+    "save_path": "./saves/tmp/"
+}
+
+lm_arr = [
     "Nose",
     "Left_eye_inner",
     "Left_eye",

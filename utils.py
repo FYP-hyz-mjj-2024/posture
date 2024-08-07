@@ -2,7 +2,6 @@ import mediapipe as mp
 import numpy as np
 import cv2
 
-
 # Local
 import config
 
@@ -120,7 +119,7 @@ def gather_angles(landmarks, targets):
             edge_lm_names, md_lm_name = target
             angle = calc_angle_lm(landmarks, edge_lm_names, md_lm_name)
             key_coord = get_landmark_coords(landmarks, md_lm_name)
-            key_coord_angles.append({"coord": key_coord, "angle":angle})
+            key_coord_angles.append({"coord": key_coord, "angle": angle})
         except Exception as e:
             print(e)
             continue
@@ -128,11 +127,10 @@ def gather_angles(landmarks, targets):
     return key_coord_angles
 
 
-def render_angles(frame, landmarks, key_coord_angles):
+def render_angles(frame, key_coord_angles):
     """
     Render the key coordinates based on the given targets.
     :param frame:
-    :param landmarks:
     :param key_coord_angles:
     :return:
     """
@@ -143,3 +141,42 @@ def render_angles(frame, landmarks, key_coord_angles):
             tuple(np.multiply(key_coord_angle["coord"][:2], config.capture_size).astype(int)),
             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA
         )
+
+
+def render_results(frame, mp_drawing, results, connections, window_name):
+    """
+    Render all the detection results.
+    :param frame: An image frame from any source acquired from opencv-python.
+    :param mp_drawing: Mediapipe drawing tools acquired by mp.solutions.drawing_utils.
+    :param results: The detected results
+    :param connections: A frozen set of connections that defines which landmarks are connected.
+    :param window_name: The name of the opened window. Default to be "Untitled".
+    :return: None
+    """
+    mp_drawing.draw_landmarks(frame, results.pose_landmarks, connections,
+                              mp_drawing.DrawingSpec(color=(245, 117, 66), thickness=2, circle_radius=2),
+                              mp_drawing.DrawingSpec(color=(245, 66, 230), thickness=2, circle_radius=2))
+
+    cv2.imshow(window_name, frame)
+
+
+def process_data(data):
+    """
+    Process the retrieved angles.
+    :param data: The angles.
+    :return: None.
+    """
+    if data is None or not config.opt["save_results"]:
+        return
+
+    with open(config.opt["save_path"], "a") as f:
+        f.write(data)
+
+
+def break_loop(show_preview=False):
+    """
+    To determine whether to break the while-loop.
+    :param show_preview: Whether is in batch mode.
+    :return: The decision to terminate the while-loop or not.
+    """
+    return cv2.waitKey(int(not show_preview)) == 27
