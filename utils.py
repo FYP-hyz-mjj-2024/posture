@@ -1,8 +1,38 @@
+import mediapipe as mp
 import numpy as np
 import cv2
 
+
 # Local
 import config
+
+
+def init_mp():
+    """
+    Initialize mediapipe essentials. Including
+    - Mediapipe drawing tools.
+    - Mediapipe posture detection model (pose).
+    :return: Drawing Utilities, Pose Model
+    """
+
+    # Drawing Utilities
+    mp_drawing = mp.solutions.drawing_utils
+
+    # Pose Estimation Model
+    mp_pose = mp.solutions.pose
+    return mp_drawing, mp_pose
+
+
+def init_capture(code=0):
+    """
+    Initialize a capture source.
+    :param code: The capture source.
+    :return:
+    """
+    cap = cv2.VideoCapture(code)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, config.capture_size[0])
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, config.capture_size[1])
+    return cap
 
 
 def get_detection_results(frame, model):

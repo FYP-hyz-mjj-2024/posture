@@ -1,15 +1,5 @@
 import cv2
-import mediapipe as mp
-import numpy as np
-
-import config
 import utils
-
-# Drawing Utilities
-mp_drawing = mp.solutions.drawing_utils
-
-# Pose Estimation Model
-mp_pose = mp.solutions.pose
 
 targets = [
     [("Left_shoulder", "Left_wrist"), "Left_elbow"],
@@ -18,36 +8,42 @@ targets = [
     [("Right_hip", "Right_elbow"), "Right_shoulder"],
 ]
 
-# Setup mediapipe Instance
-with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
-    cap = cv2.VideoCapture(0)
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, config.capture_size[0])
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, config.capture_size[1])
 
-    while True:
-        ret, frame = cap.read()
+def main():
+    # Initialize Drawing Tools and Detection Model.
+    mp_drawing, mp_pose = utils.init_mp()
 
-        """ Get Detection Results """
-        results = utils.get_detection_results(frame, pose)
+    # Setup mediapipe Instance
+    with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
+        cap = utils.init_capture(0)
 
-        """ Extract Landmarks """
-        try:
-            landmarks = results.pose_landmarks.landmark
-            key_coord_angles = utils.gather_angles(landmarks, targets)
-            utils.render_angles(frame, landmarks, key_coord_angles)
-        except Exception as e:
-            print(e)
-            pass
+        while cap.isOpened():
+            ret, frame = cap.read()
 
-        """ Render Results """
-        mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
-                                  mp_drawing.DrawingSpec(color=(245, 117, 66), thickness=2, circle_radius=2),
-                                  mp_drawing.DrawingSpec(color=(245, 66, 230), thickness=2, circle_radius=2))
+            """ Get Detection Results """
+            results = utils.get_detection_results(frame, pose)
 
-        cv2.imshow('Mediapipe Feed', frame)
+            """ Extract Landmarks """
+            try:
+                landmarks = results.pose_landmarks.landmark
+                key_coord_angles = utils.gather_angles(landmarks, targets)
+                utils.render_angles(frame, landmarks, key_coord_angles)
+            except Exception as e:
+                print(e)
+                pass
 
-        if cv2.waitKey(1) == 27:
-            break
+            """ Render Results """
+            mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
+                                      mp_drawing.DrawingSpec(color=(245, 117, 66), thickness=2, circle_radius=2),
+                                      mp_drawing.DrawingSpec(color=(245, 66, 230), thickness=2, circle_radius=2))
 
-    cap.release()
+            cv2.imshow('Mediapipe Feed', frame)
 
+            if cv2.waitKey(1) == 27:
+                break
+
+        cap.release()
+
+
+if __name__ == "__main__":
+    main()
