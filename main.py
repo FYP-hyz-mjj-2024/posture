@@ -10,6 +10,13 @@ mp_drawing = mp.solutions.drawing_utils
 # Pose Estimation Model
 mp_pose = mp.solutions.pose
 
+targets = [
+    [("Left_shoulder", "Left_wrist"), "Left_elbow"],
+    [("Right_shoulder", "Right_wrist"), "Right_elbow"],
+    [("Left_hip", "Left_elbow"), "Left_shoulder"],
+    [("Right_hip", "Right_elbow"), "Right_shoulder"],
+]
+
 # Setup mediapipe Instance
 with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
     cap = cv2.VideoCapture(0)
@@ -22,13 +29,6 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as 
         """ Extract Landmarks """
         try:
             landmarks = results.pose_landmarks.landmark
-            targets = [
-                [("Left_shoulder", "Left_wrist"), "Left_elbow"],
-                [("Right_shoulder", "Right_wrist"), "Right_elbow"],
-                [("Left_hip", "Left_elbow"), "Left_shoulder"],
-                [("Right_hip", "Right_elbow"), "Right_shoulder"],
-            ]
-
             key_coord_angles = utils.gather_angles(landmarks, targets)
             utils.render_angles(frame, landmarks, key_coord_angles)
         except Exception as e:
