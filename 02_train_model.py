@@ -102,24 +102,26 @@ def train_model(limit_data_num=None):
     return accuracy
 
 
-num_iter = 1000
-iterations = []
-accuracies = []
-for i in range(num_iter):
-    acc = train_model()
-    print(f"Iteration {i}: Accuracy: {acc}")
-    iterations.append(i)
-    accuracies.append(acc)
+def test_stability(num_iter):
+    iterations = [i for i in range(num_iter)]
+    accuracies = []
+    for i in range(num_iter):
+        acc = train_model()
+        print(f"\033[A\033[2K Iteration: {i}, Accuracy: {round(acc, 4)}")
+        accuracies.append(acc)
 
-mean = np.mean(accuracies)
-std_dev = np.std(accuracies)
+    mean = np.mean(accuracies)
+    std_dev = np.std(accuracies)
 
-plt.plot(iterations, accuracies, label=f"Training Accuracies, Std Dev={round(std_dev, 2)}")
-plt.plot(iterations, [mean for _ in range(len(iterations))], label=f"Mean")
-plt.title("Training Accuracies")
-plt.xlabel("Training Iterations")
-plt.ylabel("Training Accuracy")
-plt.legend()
-plt.grid(True)
-plt.show()
+    plt.plot(iterations, accuracies, label=f"Training Accuracies, Std Dev={round(std_dev, 2)}")
+    plt.plot(iterations, [mean for _ in range(len(iterations))], label=f"Mean")
+    plt.title("Training Accuracies")
+    plt.xlabel("Training Iterations")
+    plt.ylabel("Training Accuracy")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+
+test_stability(num_iter=1000)
 
