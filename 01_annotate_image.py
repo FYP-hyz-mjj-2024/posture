@@ -11,14 +11,19 @@ import utils
 import json
 
 targets = [
+    # Related Points
     [("Left_shoulder", "Left_wrist"), "Left_elbow"],
     [("Right_shoulder", "Right_wrist"), "Right_elbow"],
     [("Left_hip", "Left_elbow"), "Left_shoulder"],
     [("Right_hip", "Right_elbow"), "Right_shoulder"],
+
+    # Unrelated Points
+    [("Right_shoulder", "Right_knee"), "Right_hip"],
+    [("Left_shoulder", "Left_knee"), "Left_hip"]
 ]
 
 
-def process_one_frame(frame, model, mp_drawing, connections, window_name="Untitled"):
+def process_one_frame(frame, model, mp_drawing, connections, window_name="Untitled", window_shape=None):
     """
     Process one frame (one image).
     :param frame: The frame (or picture).
@@ -26,6 +31,7 @@ def process_one_frame(frame, model, mp_drawing, connections, window_name="Untitl
     :param mp_drawing: The mediapipe drawing tool acquired by mp.solutions.drawing_utils.
     :param connections: The frozenset that determines which landmarks are connected.
     :param window_name: The name of the opencv window.
+    :param window_shape: The size of the window. If not specified, defaults to config value.
     :return: The detected key angles.
     """
 
@@ -38,7 +44,7 @@ def process_one_frame(frame, model, mp_drawing, connections, window_name="Untitl
     try:
         landmarks = results.pose_landmarks.landmark
         key_coord_angles = utils.gather_angles(landmarks, targets)
-        utils.render_angles(frame, key_coord_angles)
+        utils.render_angles(frame, key_coord_angles, window_shape)
     except Exception as e:
         print(f"Target is not in detection range. Error:{e}")
 
@@ -68,10 +74,12 @@ def annotate_one_image(source_file_path, des_file_path):
     with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
 
         # Initialize Media Source
-        frame = utils.init_img(source_file_path)
+        frame, frame_shape = utils.init_image_capture(source_file_path)
 
         # Process One Frame
-        data = process_one_frame(frame, pose, mp_drawing, mp_pose.POSE_CONNECTIONS, "Detections")
+        data = process_one_frame(frame, pose, mp_drawing, mp_pose.POSE_CONNECTIONS,
+                                 window_name="Annotation",
+                                 window_shape=frame_shape)
 
         # Save data if needed.
         utils.process_data(data, path=des_file_path)
@@ -103,7 +111,7 @@ def demo():
     with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
 
         # Initialize Media Source
-        cap = utils.init_capture(0)
+        cap = utils.init_video_capture(0)
 
         while cap.isOpened():
             ret, frame = cap.read()

@@ -22,20 +22,27 @@ def init_mp():
     return mp_drawing, mp_pose
 
 
-def init_capture(code=0):
+def init_video_capture(code=0):
     """
-    Initialize a capture source.
+    Initialize a video capture source.
     :param code: The capture source.
     :return:
     """
     cap = cv2.VideoCapture(code)
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, config.capture_size[0])
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, config.capture_size[1])
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, config.capture_shape[0])
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, config.capture_shape[1])
     return cap
 
 
-def init_img(file_path):
-    return cv2.imread(file_path)
+def init_image_capture(file_path):
+    """
+    Initialize an image capture source from a file.
+    :param file_path: The path to the capture source file.
+    :return: An image, the size of the image in width-height format.
+    """
+    image = cv2.imread(file_path)
+    height, width, _ = image.shape
+    return image, [width, height]
 
 
 def get_detection_results(frame, model):
@@ -146,9 +153,17 @@ def gather_angles(landmarks, targets):
     for i, target in enumerate(targets):
         try:
             edge_lm_names, md_lm_name = target
+
+            # Angle between the landmarks
             angle = calc_angle_lm(landmarks, edge_lm_names, md_lm_name)
+
+            # Key Coordinate of the middle point for rendering purposes.
             key_coord = get_landmark_coords(landmarks, md_lm_name)
-            key_coord_angles.append({"key": md_lm_name, "coord": key_coord, "angle": angle})
+
+            # Name of this feature
+            key = f"{edge_lm_names[0]}-{md_lm_name}-{edge_lm_names[1]}"
+
+            key_coord_angles.append({"key": key, "coord": key_coord, "angle": angle})
         except Exception as e:
             print(e)
             continue
@@ -156,18 +171,22 @@ def gather_angles(landmarks, targets):
     return key_coord_angles
 
 
-def render_angles(frame, key_coord_angles):
+def render_angles(frame, key_coord_angles, window_shape=None):
     """
     Render the key coordinates based on the given targets.
-    :param frame:
-    :param key_coord_angles:
-    :return:
+    :param frame: An image frame from any source acquired from opencv-python.
+    :param key_coord_angles: A list of key-coordinate-angle tuple that records the key angles as features.
+    :param window_shape: The shape of the window used to render the key angle values at the key coordinates.
+    :return: None.
     """
+    if window_shape is None:
+        window_shape = config.capture_shape
+
     for key_coord_angle in key_coord_angles:
         cv2.putText(
             frame,
             str(round(key_coord_angle["angle"], 2)),
-            tuple(np.multiply(key_coord_angle["coord"][:2], config.capture_size).astype(int)),
+            tuple(np.multiply(key_coord_angle["coord"][:2], window_shape).astype(int)),
             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA
         )
 

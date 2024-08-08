@@ -1,4 +1,4 @@
-capture_size = [640, 480]
+capture_shape = [640, 480]
 
 opt = {
     "min_detection_confidence": 0.5,

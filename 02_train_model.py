@@ -67,7 +67,7 @@ def get_training_data(dir_to_data, possible_labels, limit_data_num):
     return train_data
 
 
-def train_model(limit_data_num=None):
+def train_model(limit_data_num=None, print_report=True):
 
     """ Get Training Data"""
     data = get_training_data("./data/train/angles/", ["using", "not_using"], limit_data_num)
@@ -95,18 +95,19 @@ def train_model(limit_data_num=None):
     # Evaluate the Model
     y_pred = model.predict(x_test)
     accuracy = accuracy_score(y_test, y_pred)
-    report = classification_report(y_test, y_pred)
 
-    # print(f"Accuracy: {accuracy}")
-    # print(f"Report: {report}")
-    return accuracy
+    if print_report:
+        report = classification_report(y_test, y_pred)
+        print(f"Report: {report}")
+
+    return model, accuracy
 
 
 def test_stability(num_iter):
     iterations = [i for i in range(num_iter)]
     accuracies = []
     for i in range(num_iter):
-        acc = train_model()
+        _, acc = train_model(print_report=False)
         print(f"\033[A\033[2K Iteration: {i}, Accuracy: {round(acc, 4)}")
         accuracies.append(acc)
 

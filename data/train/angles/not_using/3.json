@@ -1,18 +1,26 @@
 [
     {
-        "key": "Left_elbow",
+        "key": "Left_shoulder-Left_elbow-Left_wrist",
         "angle": 166.35309735143505
     },
     {
-        "key": "Right_elbow",
+        "key": "Right_shoulder-Right_elbow-Right_wrist",
         "angle": 166.97823607996364
     },
     {
-        "key": "Left_shoulder",
+        "key": "Left_hip-Left_shoulder-Left_elbow",
         "angle": 63.5784028097735
     },
     {
-        "key": "Right_shoulder",
+        "key": "Right_hip-Right_shoulder-Right_elbow",
         "angle": 55.53282484710658
+    },
+    {
+        "key": "Right_shoulder-Right_hip-Right_knee",
+        "angle": 173.0853088402478
+    },
+    {
+        "key": "Left_shoulder-Left_hip-Left_knee",
+        "angle": 163.62281332634237
     }
 ]
