@@ -16,11 +16,15 @@
         "angle": 53.885691549068724
     },
     {
-        "key": "Right_shoulder-Right_hip-Right_knee",
-        "angle": 157.70744551614033
+        "key": "Right_shoulder-Nose-Left_shoulder",
+        "angle": 142.38562757196888
     },
     {
-        "key": "Left_shoulder-Left_hip-Left_knee",
-        "angle": 170.04254422685267
+        "key": "Right_eye_outer-Right_shoulder-Nose",
+        "angle": 15.169607514347756
+    },
+    {
+        "key": "Left_eye_outer-Left_shoulder-Nose",
+        "angle": 9.863107779390107
     }
 ]
