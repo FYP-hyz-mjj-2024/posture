@@ -114,8 +114,8 @@ def test_stability(num_iter):
     mean = np.mean(accuracies)
     std_dev = np.std(accuracies)
 
-    plt.plot(iterations, accuracies, label=f"Training Accuracies, Std Dev={round(std_dev, 2)}")
-    plt.plot(iterations, [mean for _ in range(len(iterations))], label=f"Mean")
+    plt.plot(iterations, accuracies, label=f"Training Accuracies, Std Dev={round(std_dev, 4)}")
+    plt.plot(iterations, [mean for _ in range(len(iterations))], label=f"Mean={mean}")
     plt.title("Training Accuracies")
     plt.xlabel("Training Iterations")
     plt.ylabel("Training Accuracy")
