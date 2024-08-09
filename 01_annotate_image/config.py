@@ -8,43 +8,7 @@ opt = {
     "save_path": "./saves/tmp/"
 }
 
-lm_arr = [
-    "Nose",
-    "Left_eye_inner",
-    "Left_eye",
-    "Left_eye_outer",
-    "Right_eye_inner",
-    "Right_eye",
-    "Right_eye_outer",
-    "Left_ear",
-    "Right_ear",
-    "Mouth_left",
-    "Mouth_right",
-    "Left_shoulder",
-    "Right_shoulder",
-    "Left_elbow",
-    "Right_elbow",
-    "Left_wrist",
-    "Right_wrist",
-    "Left_pinky",
-    "Right_pinky",
-    "Left_index",
-    "Right_index",
-    "Left_thumb",
-    "Right_thumb",
-    "Left_hip",
-    "Right_hip",
-    "Left_knee",
-    "Right_knee",
-    "Left_ankle",
-    "Right_ankle",
-    "Left_heel",
-    "Right_heel",
-    "Left_foot_index",
-    "Right_foot_index",
-]
-
-lm = {
+lm_pose = {
     "Nose": 0,
     "Left_eye_inner": 1,
     "Left_eye": 2,

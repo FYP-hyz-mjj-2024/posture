@@ -52,7 +52,7 @@ def process_data(data, path=None):
         f.write(str(data))
 
 
-class FrameAnnotator(ABC):
+class FrameAnnotatorUtils(ABC):
 
     def get_detection_results(self, frame, model):
         """
@@ -104,7 +104,7 @@ class FrameAnnotator(ABC):
         pass
 
 
-class PoseFrameAnnotator(FrameAnnotator):
+class FrameAnnotatorPoseUtils(FrameAnnotatorUtils):
     def init_mp(self):
         """
         Initialize mediapipe essentials. Including
@@ -130,7 +130,7 @@ class PoseFrameAnnotator(FrameAnnotator):
         if not landmarks:
             return None
 
-        landmark = landmarks[config.lm[name]]
+        landmark = landmarks[config.lm_pose[name]]
         return [landmark.x, landmark.y, landmark.z]
 
     def calc_angle(self, edge_points, mid_point):
@@ -219,7 +219,7 @@ class PoseFrameAnnotator(FrameAnnotator):
             cv2.imshow(window_name, frame)
 
 
-class FaceMeshFrameAnnotator(FrameAnnotator):
+class FrameAnnotatorFaceUtils(FrameAnnotatorUtils):
     def init_mp(self):
         """
         Initialize mediapipe essentials. Including
