@@ -206,17 +206,14 @@ class FrameAnnotatorFace(FrameAnnotator):
             model,
             mp_drawing,
             connections,
-            window_name="Untitled",
+            window_name=None,
             window_shape=None,
             styles=None
     ):
-        """
-
-        """
-        """Get Detection Results"""
+        # Get detection results.
         face_results = self.annotator_utils.get_detection_results(frame, model)
 
-        """Render Results"""
+        # Render results.
         self.annotator_utils.render_results(
             frame,
             mp_drawing,
@@ -249,20 +246,11 @@ class FrameAnnotatorFace(FrameAnnotator):
             ret, frame = cap.read()
 
             # Process One Frame
-            self.process_one_frame(
-                frame,
-                targets,
-                model=face_mesh,
-                mp_drawing=mp_drawing,
-                connections=[
-                    mp_face_mesh.FACEMESH_TESSELATION,
-                    mp_face_mesh.FACEMESH_CONTOURS,
-                    mp_face_mesh.FACEMESH_IRISES
-                ],
-                window_name="Face Estimation",
-                window_shape=None,
-                styles=mp_drawing_styles
-            )
+            self.process_one_frame(frame, targets, model=face_mesh, mp_drawing=mp_drawing, connections=[
+                mp_face_mesh.FACEMESH_TESSELATION,
+                mp_face_mesh.FACEMESH_CONTOURS,
+                mp_face_mesh.FACEMESH_IRISES
+            ], window_name="Face Estimation", window_shape=None, styles=mp_drawing_styles)
 
             if self.general_utils.break_loop(show_preview=False):
                 break
@@ -309,21 +297,21 @@ if __name__ == "__main__":
     fa_pose = FrameAnnotatorPose(general_utils=utils, annotator_utils=pfa_utils)
     fa_face = FrameAnnotatorFace(general_utils=utils, annotator_utils=ffa_utils)
 
-    # demo([
-    #     fa_pose.demo,
-    #     fa_face.demo
-    # ], [
-    #     pose_targets,
-    #     face_targets
-    # ])
+    demo([
+        fa_pose.demo,
+        fa_face.demo
+    ], [
+        pose_targets,
+        face_targets
+    ])
 
-    fa_pose.batch_annotate_images(
-        source_dir_path="../data/train/img/using",
-        des_dir_path="../data/train/angles/using",
-        targets=pose_targets)
-
-    fa_pose.batch_annotate_images(
-        source_dir_path="../data/train/img/not_using",
-        des_dir_path="../data/train/angles/not_using",
-        targets=pose_targets)
+    # fa_pose.batch_annotate_images(
+    #     source_dir_path="../data/train/img/using",
+    #     des_dir_path="../data/train/angles/using",
+    #     targets=pose_targets)
+    #
+    # fa_pose.batch_annotate_images(
+    #     source_dir_path="../data/train/img/not_using",
+    #     des_dir_path="../data/train/angles/not_using",
+    #     targets=pose_targets)
 
