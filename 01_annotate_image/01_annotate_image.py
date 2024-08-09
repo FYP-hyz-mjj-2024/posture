@@ -8,14 +8,13 @@ We don't want extra information from the images to prevent over-fitting.
 
 import os
 import threading
+from abc import ABC, abstractmethod
 import json
 
+# Local
 import utils
-from utils import PoseFrameAnnotator, FaceMeshFrameAnnotator
+from utils import FrameAnnotatorPoseUtils, FrameAnnotatorFaceUtils
 
-
-pfa = PoseFrameAnnotator()
-ffa = FaceMeshFrameAnnotator()
 
 targets = [
     # Arms
@@ -31,166 +30,209 @@ targets = [
 ]
 
 
-def process_one_frame_pose(frame, model, mp_drawing, connections, window_name=None, window_shape=None, styles=None):
-    """
+class FrameAnnotator(ABC):
 
-    """
-    """ Get Detection Results """
-    pose_results = pfa.get_detection_results(frame, model)
+    def __init__(self, general_utils, annotator_utils):
+        self.general_utils = general_utils
+        self.annotator_utils = annotator_utils
 
-    """ Extract Landmarks """
-    key_coord_angles = None
+    @abstractmethod
+    def process_one_frame(self, frame, model, mp_drawing, connections, window_name=None, window_shape=None, styles=None):
+        """
+        Extract intended key features from a frame, and render the frame with the given model.
+        :param frame: A video frame or a picture frame.
+        :param model: The mediapipe detection model.
+        :param mp_drawing: The mediapipe drawing tool acquired by mp.solutions.drawing_utils.
+        :param connections: The frozenset(s) that determines which landmarks are connected.
+        :param window_name: The name of the opencv window. If not specified, the window will not be shown.
+        :param window_shape: The size of the window. If not specified, defaults to config value.
+        :return: The detected values. If window_name is specified, a window may appear.
+        """
+        pass
 
-    try:
-        landmarks = pose_results.pose_landmarks.landmark
-        key_coord_angles = pfa.gather_angles(landmarks, targets)
-        pfa.render_angles(frame, key_coord_angles, window_shape)
-    except Exception as e:
-        print(f"Target is not in detection range. Error:{e}")
+    @abstractmethod
+    def annotate_one_image(self, source_file_path, des_file_path):
+        """
+        Extract intended key features from a frame, and use it to annotate an image.
+        The results will be written into the destination file path.
+        :param source_file_path: Path to the original image file, with .png extension.
+        :param des_file_path: Path to the destination .json file where the data is written.
+        :return: None.
+        """
+        pass
 
-    """ Render Results """
-    pfa.render_results(
-        frame,
-        mp_drawing,
-        pose_results,
-        connections=connections,
-        window_name=window_name,
-        styles=styles
-    )
+    @abstractmethod
+    def batch_annotate_images(self, source_dir_path, des_dir_path):
+        """
+        Batch annotate images in a source directory. One image per file, one file per image.
+        :param source_dir_path: Source directory that stores all the images to be annotated.
+        :param des_dir_path: Destination directory that stores all the result files.
+        :return: None.
+        """
+        pass
 
-    if key_coord_angles is not None:
-        # Drop coordinates to save space. Coordinate is used only to draw on the canvas.
-        for key_coord_angle in key_coord_angles:
-            key_coord_angle.pop("coord")
-        key_coord_angles = json.dumps(key_coord_angles, indent=4)
-    return key_coord_angles
-
-def process_one_frame_face(frame, model, mp_drawing, connections, window_name="Untitled", window_shape=None, styles=None):
-    """
-
-    """
-    """Get Detection Results"""
-    face_results = ffa.get_detection_results(frame, model)
-
-    """Render Results"""
-    ffa.render_results(
-        frame,
-        mp_drawing,
-        face_results,
-        connections=connections,
-        window_name=window_name,
-        styles=styles
-    )
+    @abstractmethod
+    def demo(self, cap):
+        """
+        Starts a webcam demo.
+        """
+        pass
 
 
-def annotate_one_image(source_file_path, des_file_path):
-    """
-    Detect key angles of only one image and write the results to the corresponding path.
-    :param source_file_path: The original image file, with .png extension.
-    :param des_file_path: The destination file where the data is written.
-    :return: None.
-    """
-    # Initialize Drawing Tools and Detection Model.
-    mp_drawing, mp_pose = pfa.init_mp()
+class FrameAnnotatorPose(FrameAnnotator):
 
-    # Initialize Media Source
-    frame, frame_shape = utils.init_image_capture(source_file_path)
+    def process_one_frame(self, frame, model, mp_drawing, connections, window_name=None, window_shape=None, styles=None):
+        # Get detection Results
+        pose_results = self.annotator_utils.get_detection_results(frame, model)
 
-    # Setup mediapipe Instance
-    with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
-        # Process One Frame
-        data = process_one_frame_pose(frame, pose, mp_drawing, mp_pose.POSE_CONNECTIONS,
-                                 window_name="Annotation",
-                                 window_shape=frame_shape)
+        # Extract key angles with coordinates.
+        key_coord_angles = None
 
-        # Save data if needed.
-        utils.process_data(data, path=des_file_path)
+        try:
+            landmarks = pose_results.pose_landmarks.landmark
+            key_coord_angles = self.annotator_utils.gather_angles(landmarks, targets)
+            self.annotator_utils.render_angles(frame, key_coord_angles, window_shape)
+        except Exception as e:
+            print(f"Target is not in detection range. Error:{e}")
 
+        # Render Results
+        self.annotator_utils.render_results(
+            frame,
+            mp_drawing,
+            pose_results,
+            connections=connections,
+            window_name=window_name,
+            styles=styles
+        )
 
-def batch_annotate_images(source_dir_path, des_dir_path):
-    """
-    Batch annotate images in a source directory. One image per file, one file per image.
-    :param source_dir_path: Source directory that stores all the images to be annotated.
-    :param des_dir_path: Destination directory that stores all the result files.
-    :return: None.
-    """
-    for root, _, files in os.walk(source_dir_path):
-        for file_name in files:
-            if not file_name.endswith(".png"):
-                continue
-            file_path = os.path.join(root, file_name)
-            annotate_one_image(file_path, os.path.join(des_dir_path, file_name.replace(".png", ".json")))
+        if key_coord_angles is not None:
+            # Drop coordinates to save space. Coordinate is used only to draw on the canvas.
+            for key_coord_angle in key_coord_angles:
+                key_coord_angle.pop("coord")
+            key_coord_angles = json.dumps(key_coord_angles, indent=4)
+        return key_coord_angles
 
-            if utils.break_loop(show_preview=True):
-                continue
+    def annotate_one_image(self, source_file_path, des_file_path):
 
+        # Initialize Drawing Tools and Detection Model.
+        mp_drawing, mp_pose = self.annotator_utils.init_mp()
 
-def demo_pose(cap):
-    print("Starting pose demo...")
+        # Initialize Media Source
+        frame, frame_shape = self.general_utils.init_image_capture(source_file_path)
 
-    # Initialize Drawing Tools and Detection Model.
-    mp_drawing, mp_pose = pfa.init_mp()
+        # Setup mediapipe Instance
+        with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
+            # Process One Frame
+            data = self.process_one_frame(frame, pose, mp_drawing, mp_pose.POSE_CONNECTIONS,
+                                     window_name="Annotation",
+                                     window_shape=frame_shape)
 
-    # Initialize Model
-    pose = mp_pose.Pose(
+            # Save data if needed.
+            self.general_utils.process_data(data, path=des_file_path)
+
+    def batch_annotate_images(self, source_dir_path, des_dir_path):
+
+        for root, _, files in os.walk(source_dir_path):
+            for file_name in files:
+                if not file_name.endswith(".png"):
+                    continue
+                file_path = os.path.join(root, file_name)
+                self.annotate_one_image(file_path, os.path.join(des_dir_path, file_name.replace(".png", ".json")))
+
+                if self.general_utils.break_loop(show_preview=True):
+                    continue
+
+    def demo(self, cap):
+        print("Starting pose demo...")
+
+        # Initialize Drawing Tools and Detection Model.
+        mp_drawing, mp_pose = self.annotator_utils.init_mp()
+
+        # Initialize Model
+        pose = mp_pose.Pose(
             min_detection_confidence=0.5,
             min_tracking_confidence=0.5)
 
-    while cap.isOpened():
-        ret, frame = cap.read()
+        while cap.isOpened():
+            ret, frame = cap.read()
 
-        # Process One Frame
-        data = process_one_frame_pose(
+            # Process One Frame
+            data = self.process_one_frame(
+                frame,
+                model=pose,
+                mp_drawing=mp_drawing,
+                connections=mp_pose.POSE_CONNECTIONS,
+                window_name="Pose Estimation",
+                window_shape=None,
+                styles=None
+            )
+
+            if self.general_utils.break_loop(show_preview=False):
+                break
+
+        cap.release()
+
+
+class FrameAnnotatorFace(FrameAnnotator):
+
+    def process_one_frame(self, frame, model, mp_drawing, connections, window_name="Untitled", window_shape=None, styles=None):
+        """
+
+        """
+        """Get Detection Results"""
+        face_results = self.annotator_utils.get_detection_results(frame, model)
+
+        """Render Results"""
+        self.annotator_utils.render_results(
             frame,
-            model=pose,
-            mp_drawing=mp_drawing,
-            connections=mp_pose.POSE_CONNECTIONS,
-            window_name="Pose Estimation",
-            window_shape=None,
-            styles=None
+            mp_drawing,
+            face_results,
+            connections=connections,
+            window_name=window_name,
+            styles=styles
         )
 
-        if utils.break_loop(show_preview=False):
-            break
+    def annotate_one_image(self, source_file_path, des_file_path):
+        pass
 
-    cap.release()
+    def batch_annotate_images(self, source_dir_path, des_dir_path):
+        pass
 
+    def demo(self, cap):
+        print("Starting face demo...")
 
-def demo_face(cap):
-    print("Starting face demo...")
+        # Initialize Drawing Tools and Detection Model.
+        mp_drawing, mp_face_mesh, mp_drawing_styles = self.annotator_utils.init_mp()
 
-    # Initialize Drawing Tools and Detection Model.
-    mp_drawing, mp_face_mesh, mp_drawing_styles = ffa.init_mp()
-
-    # Initialize Model
-    face_mesh = mp_face_mesh.FaceMesh(
+        # Initialize Model
+        face_mesh = mp_face_mesh.FaceMesh(
             max_num_faces=1,
             refine_landmarks=True,
             min_detection_confidence=0.5,
             min_tracking_confidence=0.5)
 
-    while cap.isOpened():
-        ret, frame = cap.read()
+        while cap.isOpened():
+            ret, frame = cap.read()
 
-        # Process One Frame
-        process_one_frame_face(
-            frame,
-            model=face_mesh,
-            mp_drawing=mp_drawing,
-            connections=[
-                mp_face_mesh.FACEMESH_TESSELATION,
-                mp_face_mesh.FACEMESH_CONTOURS,
-                mp_face_mesh.FACEMESH_IRISES
-            ],
-            window_name="Face Estimation",
-            window_shape=None,
-            styles=mp_drawing_styles
-        )
+            # Process One Frame
+            self.process_one_frame(
+                frame,
+                model=face_mesh,
+                mp_drawing=mp_drawing,
+                connections=[
+                    mp_face_mesh.FACEMESH_TESSELATION,
+                    mp_face_mesh.FACEMESH_CONTOURS,
+                    mp_face_mesh.FACEMESH_IRISES
+                ],
+                window_name="Face Estimation",
+                window_shape=None,
+                styles=mp_drawing_styles
+            )
 
-        if utils.break_loop(show_preview=False):
-            break
+            if self.general_utils.break_loop(show_preview=False):
+                break
 
-    cap.release()
+        cap.release()
 
 
 def demo(funcs):
@@ -210,10 +252,20 @@ def demo(funcs):
 
 
 if __name__ == "__main__":
-    # demo([
-    #     demo_pose,
-    #     demo_face
-    # ])
-    batch_annotate_images("../data/train/img/using", "../data/train/angles/using")
-    batch_annotate_images("../data/train/img/not_using", "../data/train/angles/not_using")
+
+    # Initialize Utilities
+    pfa_utils = FrameAnnotatorPoseUtils()
+    ffa_utils = FrameAnnotatorFaceUtils()
+
+    # Inject Utilities to Annotator
+    fa_pose = FrameAnnotatorPose(general_utils=utils, annotator_utils=pfa_utils)
+    fa_face = FrameAnnotatorFace(general_utils=utils, annotator_utils=ffa_utils)
+
+    demo([
+        fa_pose.demo,
+        fa_face.demo
+    ])
+
+    # fa_pose.batch_annotate_images("../data/train/img/using", "../data/train/angles/using")
+    # fa_pose.batch_annotate_images("../data/train/img/not_using", "../data/train/angles/not_using")
 
