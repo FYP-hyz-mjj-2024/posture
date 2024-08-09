@@ -70,7 +70,7 @@ class FrameAnnotatorUtils(ABC):
 
         return results
 
-    def calc_angle(self, edge_points, mid_point):
+    def _calc_angle(self, edge_points, mid_point):
         """
         Calculate the angle based on the given edge points and middle point.
         :param edge_points: The edge points of the angle.
@@ -133,10 +133,7 @@ class FrameAnnotatorPoseUtils(FrameAnnotatorUtils):
         landmark = landmarks[config.lm_pose[name]]
         return [landmark.x, landmark.y, landmark.z]
 
-    def calc_angle(self, edge_points, mid_point):
-        return super().calc_angle(edge_points, mid_point)
-
-    def calc_angle_lm(self, landmarks, edge_lm_names, mid_lm_name):
+    def __calc_angle_lm(self, landmarks, edge_lm_names, mid_lm_name):
         """
         Calculate the angle based on the given edge landmarks and the middle landmark.
         The landmarks are specified with the standard name.
@@ -147,7 +144,7 @@ class FrameAnnotatorPoseUtils(FrameAnnotatorUtils):
         """
         n1, n2 = edge_lm_names
         nm = mid_lm_name
-        return self.calc_angle(
+        return self._calc_angle(
             [self.get_landmark_coords(landmarks, n1), self.get_landmark_coords(landmarks, n2)],
             self.get_landmark_coords(landmarks, nm)
         )
@@ -169,7 +166,7 @@ class FrameAnnotatorPoseUtils(FrameAnnotatorUtils):
                 edge_lm_names, md_lm_name = target
 
                 # Angle between the landmarks
-                angle = self.calc_angle_lm(landmarks, edge_lm_names, md_lm_name)
+                angle = self.__calc_angle_lm(landmarks, edge_lm_names, md_lm_name)
 
                 # Key Coordinate of the middle point for rendering purposes.
                 key_coord = self.get_landmark_coords(landmarks, md_lm_name)
