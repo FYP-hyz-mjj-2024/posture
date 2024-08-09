@@ -16,20 +16,6 @@ import utils
 from utils import FrameAnnotatorPoseUtils, FrameAnnotatorFaceUtils
 
 
-targets = [
-    # Arms
-    [("Left_shoulder", "Left_wrist"), "Left_elbow"],
-    [("Right_shoulder", "Right_wrist"), "Right_elbow"],
-    [("Left_hip", "Left_elbow"), "Left_shoulder"],
-    [("Right_hip", "Right_elbow"), "Right_shoulder"],
-
-    # Face-Shoulder
-    [("Right_shoulder", "Left_shoulder"), "Nose"],
-    [("Right_eye_outer", "Nose"), "Right_shoulder"],
-    [("Left_eye_outer", "Nose"), "Left_shoulder"],
-]
-
-
 class FrameAnnotator(ABC):
 
     def __init__(self, general_utils, annotator_utils):
@@ -37,51 +23,77 @@ class FrameAnnotator(ABC):
         self.annotator_utils = annotator_utils
 
     @abstractmethod
-    def process_one_frame(self, frame, model, mp_drawing, connections, window_name=None, window_shape=None, styles=None):
+    def process_one_frame(
+            self,
+            frame,
+            targets,
+            model,
+            mp_drawing,
+            connections,
+            window_name=None,
+            window_shape=None,
+            styles=None
+    ):
         """
         Extract intended key features from a frame, and render the frame with the given model.
         :param frame: A video frame or a picture frame.
         :param model: The mediapipe detection model.
+        :param targets: The intended detection targets.
         :param mp_drawing: The mediapipe drawing tool acquired by mp.solutions.drawing_utils.
         :param connections: The frozenset(s) that determines which landmarks are connected.
         :param window_name: The name of the opencv window. If not specified, the window will not be shown.
         :param window_shape: The size of the window. If not specified, defaults to config value.
+        :param styles: The mediapipe drawing styles.
         :return: The detected values. If window_name is specified, a window may appear.
         """
         pass
 
     @abstractmethod
-    def annotate_one_image(self, source_file_path, des_file_path):
+    def annotate_one_image(self, source_file_path, des_file_path, targets):
         """
         Extract intended key features from a frame, and use it to annotate an image.
         The results will be written into the destination file path.
         :param source_file_path: Path to the original image file, with .png extension.
         :param des_file_path: Path to the destination .json file where the data is written.
+        :param targets: The intended detection targets.
         :return: None.
         """
         pass
 
     @abstractmethod
-    def batch_annotate_images(self, source_dir_path, des_dir_path):
+    def batch_annotate_images(self, source_dir_path, des_dir_path, targets):
         """
         Batch annotate images in a source directory. One image per file, one file per image.
         :param source_dir_path: Source directory that stores all the images to be annotated.
         :param des_dir_path: Destination directory that stores all the result files.
+        :param targets: The intended detection targets for each annotation.
         :return: None.
         """
         pass
 
     @abstractmethod
-    def demo(self, cap):
+    def demo(self, cap, targets):
         """
         Starts a webcam demo.
+        :param cap: An open-cv video capture object.
+        :param targets: The intended detection targets.
         """
         pass
 
 
 class FrameAnnotatorPose(FrameAnnotator):
 
-    def process_one_frame(self, frame, model, mp_drawing, connections, window_name=None, window_shape=None, styles=None):
+    def process_one_frame(
+            self,
+            frame,
+            targets,
+            model,
+            mp_drawing,
+            connections,
+            window_name=None,
+            window_shape=None,
+            styles=None
+    ):
         # Get detection Results
         pose_results = self.annotator_utils.get_detection_results(frame, model)
 
@@ -112,7 +124,7 @@ class FrameAnnotatorPose(FrameAnnotator):
             key_coord_angles = json.dumps(key_coord_angles, indent=4)
         return key_coord_angles
 
-    def annotate_one_image(self, source_file_path, des_file_path):
+    def annotate_one_image(self, source_file_path, des_file_path, targets):
 
         # Initialize Drawing Tools and Detection Model.
         mp_drawing, mp_pose = self.annotator_utils.init_mp()
@@ -123,26 +135,37 @@ class FrameAnnotatorPose(FrameAnnotator):
         # Setup mediapipe Instance
         with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
             # Process One Frame
-            data = self.process_one_frame(frame, pose, mp_drawing, mp_pose.POSE_CONNECTIONS,
-                                     window_name="Annotation",
-                                     window_shape=frame_shape)
+            data = self.process_one_frame(
+                frame,
+                targets,
+                pose,
+                mp_drawing,
+                mp_pose.POSE_CONNECTIONS,
+                window_name="Annotation",
+                window_shape=frame_shape
+            )
 
             # Save data if needed.
             self.general_utils.process_data(data, path=des_file_path)
 
-    def batch_annotate_images(self, source_dir_path, des_dir_path):
+    def batch_annotate_images(self, source_dir_path, des_dir_path, targets):
 
         for root, _, files in os.walk(source_dir_path):
             for file_name in files:
                 if not file_name.endswith(".png"):
                     continue
                 file_path = os.path.join(root, file_name)
-                self.annotate_one_image(file_path, os.path.join(des_dir_path, file_name.replace(".png", ".json")))
+                self.annotate_one_image(
+                    file_path,
+                    os.path.join(des_dir_path, file_name.replace(".png", ".json")),
+                    targets
+                )
 
+                # TODO: This is weird. Need to fix.
                 if self.general_utils.break_loop(show_preview=True):
                     continue
 
-    def demo(self, cap):
+    def demo(self, cap, targets):
         print("Starting pose demo...")
 
         # Initialize Drawing Tools and Detection Model.
@@ -159,6 +182,7 @@ class FrameAnnotatorPose(FrameAnnotator):
             # Process One Frame
             data = self.process_one_frame(
                 frame,
+                targets,
                 model=pose,
                 mp_drawing=mp_drawing,
                 connections=mp_pose.POSE_CONNECTIONS,
@@ -175,7 +199,7 @@ class FrameAnnotatorPose(FrameAnnotator):
 
 class FrameAnnotatorFace(FrameAnnotator):
 
-    def process_one_frame(self, frame, model, mp_drawing, connections, window_name="Untitled", window_shape=None, styles=None):
+    def process_one_frame(self, frame, targets, model, mp_drawing, connections, window_name="Untitled", window_shape=None, styles=None):
         """
 
         """
@@ -192,13 +216,13 @@ class FrameAnnotatorFace(FrameAnnotator):
             styles=styles
         )
 
-    def annotate_one_image(self, source_file_path, des_file_path):
+    def annotate_one_image(self, source_file_path, des_file_path, targets):
         pass
 
-    def batch_annotate_images(self, source_dir_path, des_dir_path):
+    def batch_annotate_images(self, source_dir_path, des_dir_path, targets):
         pass
 
-    def demo(self, cap):
+    def demo(self, cap, targets):
         print("Starting face demo...")
 
         # Initialize Drawing Tools and Detection Model.
@@ -217,6 +241,7 @@ class FrameAnnotatorFace(FrameAnnotator):
             # Process One Frame
             self.process_one_frame(
                 frame,
+                targets,
                 model=face_mesh,
                 mp_drawing=mp_drawing,
                 connections=[
@@ -235,9 +260,9 @@ class FrameAnnotatorFace(FrameAnnotator):
         cap.release()
 
 
-def demo(funcs):
+def demo(funcs, func_targets):
     cap = utils.init_video_capture(0)
-    threads = [threading.Thread(target=func, args=[cap]) for func in funcs]
+    threads = [threading.Thread(target=func, args=[cap, target]) for func, target in zip(funcs, func_targets)]
     try:
         print("Starting...")
         for thread in threads:
@@ -252,6 +277,19 @@ def demo(funcs):
 
 
 if __name__ == "__main__":
+    face_targets = []
+    pose_targets = [
+        # Arms
+        [("Left_shoulder", "Left_wrist"), "Left_elbow"],
+        [("Right_shoulder", "Right_wrist"), "Right_elbow"],
+        [("Left_hip", "Left_elbow"), "Left_shoulder"],
+        [("Right_hip", "Right_elbow"), "Right_shoulder"],
+
+        # Face-Shoulder
+        [("Right_shoulder", "Left_shoulder"), "Nose"],
+        [("Right_eye_outer", "Nose"), "Right_shoulder"],
+        [("Left_eye_outer", "Nose"), "Left_shoulder"],
+    ]
 
     # Initialize Utilities
     pfa_utils = FrameAnnotatorPoseUtils()
@@ -261,11 +299,21 @@ if __name__ == "__main__":
     fa_pose = FrameAnnotatorPose(general_utils=utils, annotator_utils=pfa_utils)
     fa_face = FrameAnnotatorFace(general_utils=utils, annotator_utils=ffa_utils)
 
-    demo([
-        fa_pose.demo,
-        fa_face.demo
-    ])
+    # demo([
+    #     fa_pose.demo,
+    #     fa_face.demo
+    # ], [
+    #     pose_targets,
+    #     face_targets
+    # ])
 
-    # fa_pose.batch_annotate_images("../data/train/img/using", "../data/train/angles/using")
-    # fa_pose.batch_annotate_images("../data/train/img/not_using", "../data/train/angles/not_using")
+    fa_pose.batch_annotate_images(
+        source_dir_path="../data/train/img/using",
+        des_dir_path="../data/train/angles/using",
+        targets=pose_targets)
+
+    fa_pose.batch_annotate_images(
+        source_dir_path="../data/train/img/not_using",
+        des_dir_path="../data/train/angles/not_using",
+        targets=pose_targets)
 
