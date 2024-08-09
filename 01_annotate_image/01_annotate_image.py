@@ -83,61 +83,6 @@ def process_one_frame_face(frame, model, mp_drawing, connections, window_name="U
     )
 
 
-def process_one_frame(frame, models, mp_drawing, connections, window_name="Untitled", window_shape=None, styles=None):
-    """
-    Process one frame (one image).
-    :param frame: The frame (or picture).
-    :param models: A list of mediapipe detection models.
-    :param mp_drawing: The mediapipe drawing tool acquired by mp.solutions.drawing_utils.
-    :param connections: A list of corresponding rendering connections according to the sequence of the model.
-    :param window_name: The name of the opencv window.
-    :param window_shape: The size of the window. If not specified, defaults to config value.
-    :return: The detected key angles.
-    """
-
-    pose_model, face_model = models
-    pose_connections, face_connections = connections
-
-    """ Get Detection Results """
-    pose_results = pfa.get_detection_results(frame, pose_model)
-    face_results = ffa.get_detection_results(frame, face_model)
-
-    """ Extract Landmarks """
-    key_coord_angles = None
-
-    try:
-        landmarks = pose_results.pose_landmarks.landmark
-        key_coord_angles = pfa.gather_angles(landmarks, targets)
-        pfa.render_angles(frame, key_coord_angles, window_shape)
-    except Exception as e:
-        print(f"Target is not in detection range. Error:{e}")
-
-    """ Render Results """
-    pfa.render_results(
-        frame,
-        mp_drawing,
-        pose_results,
-        connections=pose_connections
-    )
-
-    ffa.render_results(
-        frame,
-        mp_drawing,
-        face_results,
-        connections=face_connections,
-        window_name=window_name,
-        styles=styles
-    )
-
-    if key_coord_angles is not None:
-        # Drop coordinates to save space. Coordinate is used only to draw on the canvas.
-        for key_coord_angle in key_coord_angles:
-            key_coord_angle.pop("coord")
-        key_coord_angles = json.dumps(key_coord_angles, indent=4)
-
-    return key_coord_angles
-
-
 def annotate_one_image(source_file_path, des_file_path):
     """
     Detect key angles of only one image and write the results to the corresponding path.
@@ -154,7 +99,7 @@ def annotate_one_image(source_file_path, des_file_path):
     # Setup mediapipe Instance
     with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
         # Process One Frame
-        data = process_one_frame(frame, pose, mp_drawing, mp_pose.POSE_CONNECTIONS,
+        data = process_one_frame_pose(frame, pose, mp_drawing, mp_pose.POSE_CONNECTIONS,
                                  window_name="Annotation",
                                  window_shape=frame_shape)
 
@@ -265,7 +210,10 @@ def demo(funcs):
 
 
 if __name__ == "__main__":
-    demo([
-        demo_pose,
-        demo_face
-    ])
+    # demo([
+    #     demo_pose,
+    #     demo_face
+    # ])
+    batch_annotate_images("../data/train/img/using", "../data/train/angles/using")
+    batch_annotate_images("../data/train/img/not_using", "../data/train/angles/not_using")
+
