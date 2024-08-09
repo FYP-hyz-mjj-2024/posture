@@ -6,28 +6,69 @@ import mediapipe as mp
 import config
 
 
+def init_image_capture(file_path):
+    """
+    Initialize an image capture source from a file.
+    :param file_path: The path to the capture source file.
+    :return: An image, the size of the image in width-height format.
+    """
+    image = cv2.imread(file_path)
+    height, width, _ = image.shape
+    return image, [width, height]
+
+
+def init_video_capture(code=0):
+    """
+    Initialize a video capture source.
+    :param code: The capture source.
+    :return:
+    """
+    cap = cv2.VideoCapture(code)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, config.capture_shape[0])
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, config.capture_shape[1])
+    return cap
+
+
+def break_loop(show_preview=False):
+    """
+    To determine whether to break the while-loop.
+    :param show_preview: Whether is in batch mode.
+    :return: The decision to terminate the while-loop or not.
+    """
+    return cv2.waitKey(int(not show_preview)) == 27
+
+
+def process_data(data, path=None):
+    """
+    Process the retrieved angles.
+    :param data: The angles.
+    :param path: The save path of the file.
+    :return: None.
+    """
+    if data is None or path is None:
+        return
+
+    with open(path, "w") as f:
+        f.write(str(data))
+
+
 class FrameAnnotator(ABC):
 
-    def init_image_capture(self, file_path):
+    def get_detection_results(self, frame, model):
         """
-        Initialize an image capture source from a file.
-        :param file_path: The path to the capture source file.
-        :return: An image, the size of the image in width-height format.
+        Get the detection results for this frame with the given model.
+        :param frame: An image frame from any source acquired from opencv-python.
+        :param model: A mediapipe detection model acquired with mp.solutions.<model_name>.
+        :return: The detection results.
         """
-        image = cv2.imread(file_path)
-        height, width, _ = image.shape
-        return image, [width, height]
+        # Re-color image: BGR (opencv preferred) -> RGB (mediapipe preferred)
+        image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        image.flags.writeable = False
 
-    def init_video_capture(self, code=0):
-        """
-        Initialize a video capture source.
-        :param code: The capture source.
-        :return:
-        """
-        cap = cv2.VideoCapture(code)
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, config.capture_shape[0])
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, config.capture_shape[1])
-        return cap
+        # Pose detection with model
+        results = model.process(image)
+
+        return results
 
     def calc_angle(self, edge_points, mid_point):
         """
@@ -50,33 +91,8 @@ class FrameAnnotator(ABC):
 
         return angle
 
-    def break_loop(self, show_preview=False):
-        """
-        To determine whether to break the while-loop.
-        :param show_preview: Whether is in batch mode.
-        :return: The decision to terminate the while-loop or not.
-        """
-        return cv2.waitKey(int(not show_preview)) == 27
-
-    def process_data(self, data, path=None):
-        """
-        Process the retrieved angles.
-        :param data: The angles.
-        :param path: The save path of the file.
-        :return: None.
-        """
-        if data is None or path is None:
-            return
-
-        with open(path, "w") as f:
-            f.write(str(data))
-
     @abstractmethod
     def init_mp(self):
-        pass
-
-    @abstractmethod
-    def get_detection_results(self, frame, model):
         pass
 
     @abstractmethod
@@ -84,7 +100,7 @@ class FrameAnnotator(ABC):
         pass
 
     @abstractmethod
-    def render_results(self, frame, mp_drawing, results, connections, window_name):
+    def render_results(self, frame, mp_drawing, results, connections, window_name=None, styles=None):
         pass
 
 
@@ -103,22 +119,6 @@ class PoseFrameAnnotator(FrameAnnotator):
         # Pose Estimation Model
         mp_pose = mp.solutions.pose
         return mp_drawing, mp_pose
-
-    def get_detection_results(self, frame, model):
-        """
-        Get the detection results for this frame with the given model.
-        :param frame: An image frame from any source acquired from opencv-python.
-        :param model: A mediapipe pose detection model acquired with mp.solutions.pose.
-        :return: The original image frame.
-        """
-        # Re-color image: BGR (opencv preferred) -> RGB (mediapipe preferred)
-        image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        image.flags.writeable = False
-
-        # Pose detection with model
-        results = model.process(image)
-
-        return results
 
     def get_landmark_coords(self, landmarks, name):
         """
@@ -201,7 +201,7 @@ class PoseFrameAnnotator(FrameAnnotator):
                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA
             )
 
-    def render_results(self, frame, mp_drawing, results, connections, window_name):
+    def render_results(self, frame, mp_drawing, results, connections, window_name=None, styles=None):
         """
         Render all the detection results.
         :param frame: An image frame from any source acquired from opencv-python.
@@ -209,16 +209,73 @@ class PoseFrameAnnotator(FrameAnnotator):
         :param results: The detected results
         :param connections: A frozen set of connections that defines which landmarks are connected.
         :param window_name: The name of the opened window. Default to be "Untitled".
+        :param styles: Mediapipe drawing styles
         :return: None
         """
         mp_drawing.draw_landmarks(frame, results.pose_landmarks, connections,
                                   mp_drawing.DrawingSpec(color=(245, 117, 66), thickness=2, circle_radius=2),
                                   mp_drawing.DrawingSpec(color=(245, 66, 230), thickness=2, circle_radius=2))
+        if window_name is not None:
+            cv2.imshow(window_name, frame)
 
-        cv2.imshow(window_name, frame)
 
-    def process_data(self, data, path=None):
-        return super().process_data(data, path)
+class FaceMeshFrameAnnotator(FrameAnnotator):
+    def init_mp(self):
+        """
+        Initialize mediapipe essentials. Including
+        - Mediapipe drawing tools.
+        - Mediapipe face-mesh detection model (face_mesh).
+        :return: Drawing Utilities, Face Mesh Model, Mediapipe drawing styles
+        """
 
-    def break_loop(self, show_preview=False):
-        return super().break_loop(show_preview)
+        # Drawing Utilities
+        mp_drawing = mp.solutions.drawing_utils
+
+        # Drawing Styles
+        mp_drawing_styles = mp.solutions.drawing_styles
+
+        # Pose Estimation Model
+        mp_face_mesh = mp.solutions.face_mesh
+        return mp_drawing, mp_face_mesh, mp_drawing_styles
+
+    def get_landmark_coords(self, landmarks, name):
+        pass
+
+    def render_results(self, frame, mp_drawing, results, connections, window_name=None, styles=None):
+        """
+        Render all the detection results.
+        :param frame: An image frame from any source acquired from opencv-python.
+        :param mp_drawing: Mediapipe drawing tools acquired by mp.solutions.drawing_utils.
+        :param results: The detected face-mesh results.
+        :param connections: A frozen set of connections that defines which landmarks are connected.
+        :param window_name: The name of the opened window. Default to be "Untitled".
+        :return: None
+        """
+        if not results.multi_face_landmarks:
+            return
+
+        for face_landmarks in results.multi_face_landmarks:
+            mp_drawing.draw_landmarks(
+                image=frame,
+                landmark_list=face_landmarks,
+                connections=connections[0],
+                landmark_drawing_spec=None,
+                connection_drawing_spec=styles
+                .get_default_face_mesh_tesselation_style())
+            mp_drawing.draw_landmarks(
+                image=frame,
+                landmark_list=face_landmarks,
+                connections=connections[1],
+                landmark_drawing_spec=None,
+                connection_drawing_spec=styles
+                .get_default_face_mesh_contours_style())
+            mp_drawing.draw_landmarks(
+                image=frame,
+                landmark_list=face_landmarks,
+                connections=connections[2],
+                landmark_drawing_spec=None,
+                connection_drawing_spec=styles
+                .get_default_face_mesh_iris_connections_style())
+
+        if window_name is not None:
+            cv2.imshow(window_name, frame)
