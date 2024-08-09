@@ -199,7 +199,17 @@ class FrameAnnotatorPose(FrameAnnotator):
 
 class FrameAnnotatorFace(FrameAnnotator):
 
-    def process_one_frame(self, frame, targets, model, mp_drawing, connections, window_name="Untitled", window_shape=None, styles=None):
+    def process_one_frame(
+            self,
+            frame,
+            targets,
+            model,
+            mp_drawing,
+            connections,
+            window_name="Untitled",
+            window_shape=None,
+            styles=None
+    ):
         """
 
         """
