@@ -156,7 +156,9 @@ class FrameAnnotatorPoseUtils(FrameAnnotatorUtils):
         """
         Gather the angles based on the given targets.
         :param landmarks: All the landmarks detected with the model.
-        :param targets: The targets to be gathered.
+        :param targets: The list of targets to be gathered. Each target is a specific angle value in degrees.
+        To specify one target, give a list like this: [("left_lm_name","right_lm_name"), "mid_lm_name"].
+        To specify a list of targets, give a list of them.
         :return: The gathered angles.
         """
 
