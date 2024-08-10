@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import mean_squared_error
 import matplotlib.pyplot as plt
 
 
@@ -89,7 +90,8 @@ def train_model(limit_data_num=None, print_report=True):
     x_test = scaler.transform(x_test)
 
     # Train the Model
-    model = RandomForestClassifier(n_estimators=100, random_state=42)
+    model = RandomForestClassifier(n_estimators=200,random_state=114514+1919)
+    # TODO: CNN , SVR, ??
     model.fit(x_train, y_train)
 
     # Evaluate the Model
@@ -124,5 +126,5 @@ def test_stability(num_iter):
     plt.show()
 
 
-test_stability(num_iter=1000)
+test_stability(num_iter=100)
 
