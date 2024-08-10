@@ -36,6 +36,8 @@ class FrameAnnotator(ABC):
     ):
         """
         Extract intended key features from a frame, and render the frame with the given model.
+        This function may or may not show the rendered frame, depending on whether invoker has
+        specified the parameter window_name.
         :param frame: A video frame or a picture frame.
         :param model: The mediapipe detection model.
         :param targets: The intended detection targets.
@@ -297,21 +299,21 @@ if __name__ == "__main__":
     fa_pose = FrameAnnotatorPose(general_utils=utils, annotator_utils=pfa_utils)
     fa_face = FrameAnnotatorFace(general_utils=utils, annotator_utils=ffa_utils)
 
-    demo([
-        fa_pose.demo,
-        fa_face.demo
-    ], [
-        pose_targets,
-        face_targets
-    ])
+    # demo([
+    #     fa_pose.demo,
+    #     fa_face.demo
+    # ], [
+    #     pose_targets,
+    #     face_targets
+    # ])
 
-    # fa_pose.batch_annotate_images(
-    #     source_dir_path="../data/train/img/using",
-    #     des_dir_path="../data/train/angles/using",
-    #     targets=pose_targets)
-    #
-    # fa_pose.batch_annotate_images(
-    #     source_dir_path="../data/train/img/not_using",
-    #     des_dir_path="../data/train/angles/not_using",
-    #     targets=pose_targets)
+    fa_pose.batch_annotate_images(
+        source_dir_path="../data/train/img/using",
+        des_dir_path="../data/train/angles/using",
+        targets=pose_targets)
+
+    fa_pose.batch_annotate_images(
+        source_dir_path="../data/train/img/not_using",
+        des_dir_path="../data/train/angles/not_using",
+        targets=pose_targets)
 
