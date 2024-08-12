@@ -149,7 +149,7 @@ class FrameAnnotatorPoseUtils(FrameAnnotatorUtils):
             self.get_landmark_coords(landmarks, nm)
         )
 
-    def gather_angles(self, landmarks, targets):
+    def gather_angles(self, landmarks, targets, round_to=3):
         """
         Gather the angles based on the given targets.
         :param landmarks: All the landmarks detected with the model.
@@ -167,6 +167,7 @@ class FrameAnnotatorPoseUtils(FrameAnnotatorUtils):
 
                 # Angle between the landmarks
                 angle = self.__calc_angle_lm(landmarks, edge_lm_names, md_lm_name)
+                angle = round(angle, round_to)
 
                 # Key Coordinate of the middle point for rendering purposes.
                 key_coord = self.get_landmark_coords(landmarks, md_lm_name)
