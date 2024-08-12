@@ -8,14 +8,11 @@ We don't want extra information from the images to prevent over-fitting.
 
 import os
 import pickle
-import threading
 from abc import ABC, abstractmethod
 import json
 
 import cv2
 import numpy as np
-# SKLearn
-from sklearn.preprocessing import StandardScaler
 
 # Local
 import utils
@@ -187,28 +184,44 @@ class FrameAnnotatorPose(FrameAnnotator):
         while cap.isOpened():
             ret, frame = cap.read()
 
-            # Process One Frame
+            # Get key angles, and pose detection results.
             data, pose_results = self.process_one_frame(
                 frame,
                 targets,
                 model=pose,
                 mp_drawing=mp_drawing,
                 connections=mp_pose.POSE_CONNECTIONS,
-                window_name=None,
+                window_name=None,       # Don't rush to render now
                 window_shape=None,
                 styles=None
             )
 
+            # Skip some initial frames
             if data is None:
                 continue
 
+            # Use the model to get the results
             if model_and_scaler is not None:
+                # Prepare the key coordinate data
                 this_model, scaler = model_and_scaler
-                numeric_data = np.array([kka['angle'] for kka in data]).reshape(1, -1)
-                numeric_data = scaler.transform(numeric_data)
+                _numeric_data = np.array([kka['angle'] for kka in data]).reshape(1, -1)
+                numeric_data = scaler.transform(_numeric_data)
+
+                # Make the prediction
                 prediction = this_model.predict(numeric_data)
                 text = "not using" if prediction == 0 else "using"
-                cv2.putText(frame, text, (10, 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
+
+                # Put the prediction results on the frame
+                cv2.putText(
+                    frame,
+                    text,
+                    (10, 10),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.5,
+                    (255, 255, 255),
+                    2,
+                    cv2.LINE_AA
+                )
 
             # Render Results
             self.annotator_utils.render_results(
@@ -287,24 +300,7 @@ class FrameAnnotatorFace(FrameAnnotator):
         cap.release()
 
 
-def demo(funcs, func_targets):
-    cap = utils.init_video_capture(0)
-    threads = [threading.Thread(target=func, args=[cap, target]) for func, target in zip(funcs, func_targets)]
-    try:
-        print("Starting...")
-        for thread in threads:
-            thread.start()
-
-        for thread in threads:
-            thread.join()
-
-        print("Ended.")
-    except Exception as e:
-        print(e)
-
-
 if __name__ == "__main__":
-    face_targets = []
     pose_targets = [
         # Arms
         [("Left_shoulder", "Left_wrist"), "Left_elbow"],
@@ -320,11 +316,11 @@ if __name__ == "__main__":
 
     # Initialize Utilities
     pfa_utils = FrameAnnotatorPoseUtils()
-    ffa_utils = FrameAnnotatorFaceUtils()
+    # ffa_utils = FrameAnnotatorFaceUtils()
 
     # Inject Utilities to Annotator
     fa_pose = FrameAnnotatorPose(general_utils=utils, annotator_utils=pfa_utils)
-    fa_face = FrameAnnotatorFace(general_utils=utils, annotator_utils=ffa_utils)
+    # fa_face = FrameAnnotatorFace(general_utils=utils, annotator_utils=ffa_utils)
 
     with open("../data/models/posture_classify.pkl", "rb") as f:
         model = pickle.load(f)
@@ -334,14 +330,6 @@ if __name__ == "__main__":
 
     cap = utils.init_video_capture(0)
     fa_pose.demo(cap, pose_targets, [model, model_scaler])
-
-    # demo([
-    #     fa_pose.demo,
-    #     fa_face.demo
-    # ], [
-    #     pose_targets,
-    #     face_targets
-    # ])
 
     # fa_pose.batch_annotate_images(
     #     source_dir_path="../data/train/img/using",
