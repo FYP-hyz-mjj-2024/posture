@@ -11,6 +11,7 @@ from sklearn.svm import SVR
 from sklearn.metrics import accuracy_score, classification_report
 from sklearn.metrics import mean_squared_error
 import matplotlib.pyplot as plt
+import pickle
 
 
 def batch_get_data(data_dir, label, limit_data_num=None):
@@ -89,31 +90,35 @@ def train_model(limit_data_num=None, print_report=True):
     x_test = scaler.transform(x_test)
 
     # Train the Model
-    # model = RandomForestClassifier(n_estimators=200, random_state=114514+1919)
-    model = SVR(kernel='rbf', C=0.1)
+    model = RandomForestClassifier(n_estimators=200, random_state=114514+1919)
+    # model = SVR(kernel='rbf', C=0.1)
 
     # TODO: CNN , SVR, ??
     model.fit(x_train, y_train)
 
     # Evaluate the Model
     y_pred = model.predict(x_test)
-    # accuracy = accuracy_score(y_test, y_pred)
-    mse = mean_squared_error(y_test, y_pred)
+    accuracy = accuracy_score(y_test, y_pred)
+    # mse = mean_squared_error(y_test, y_pred)
 
     if print_report:
         report = classification_report(y_test, y_pred)
         print(f"Report: {report}")
 
-    return model, mse
+    return model, scaler, accuracy
 
 
 def test_stability(num_iter):
     iterations = [i for i in range(num_iter)]
     accuracies = []
+    models = []
+    scalers = []
     for i in range(num_iter):
-        _, acc = train_model(print_report=False)
+        model, scaler, acc = train_model(print_report=False)
         print(f"\033[A\033[2K Iteration: {i}, Accuracy: {round(acc, 4)}")
         accuracies.append(acc)
+        models.append(model)
+        scalers.append(scaler)
 
     mean = np.mean(accuracies)
     std_dev = np.std(accuracies)
@@ -127,6 +132,17 @@ def test_stability(num_iter):
     plt.grid(True)
     plt.show()
 
+    # Select the model with an accuracy that's closest to 0.85
+    indexed_accuracies = list(enumerate(accuracies))
+    sorted_indexed_accuracies = sorted(indexed_accuracies, key=lambda x: abs(x[1] - 0.85))
+    print(sorted_indexed_accuracies)
 
-test_stability(num_iter=100)
+    return models[sorted_indexed_accuracies[0][0]], scalers[sorted_indexed_accuracies[0][0]]
+
+
+best_mode, best_scaler = test_stability(num_iter=100)
+with open('./data/models/posture_classify.pkl', 'wb') as f:
+    pickle.dump(best_mode, f)
+with open('./data/models/posture_classify_scaler.pkl', 'wb') as f:
+    pickle.dump(best_scaler, f)
 
