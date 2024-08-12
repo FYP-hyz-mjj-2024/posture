@@ -316,12 +316,13 @@ if __name__ == "__main__":
 
     # Initialize Utilities
     pfa_utils = FrameAnnotatorPoseUtils()
-    # ffa_utils = FrameAnnotatorFaceUtils()
 
     # Inject Utilities to Annotator
     fa_pose = FrameAnnotatorPose(general_utils=utils, annotator_utils=pfa_utils)
-    # fa_face = FrameAnnotatorFace(general_utils=utils, annotator_utils=ffa_utils)
 
+    """ 
+    Model Prediction Demo 
+    """
     with open("../data/models/posture_classify.pkl", "rb") as f:
         model = pickle.load(f)
 
@@ -331,6 +332,9 @@ if __name__ == "__main__":
     cap = utils.init_video_capture(0)
     fa_pose.demo(cap, pose_targets, [model, model_scaler])
 
+    """ 
+    Image Annotation 
+    """
     # fa_pose.batch_annotate_images(
     #     source_dir_path="../data/train/img/using",
     #     des_dir_path="../data/train/angles/using",
