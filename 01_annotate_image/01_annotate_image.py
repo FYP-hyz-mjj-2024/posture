@@ -12,6 +12,7 @@ import threading
 from abc import ABC, abstractmethod
 import json
 
+import cv2
 import numpy as np
 # SKLearn
 from sklearn.preprocessing import StandardScaler
@@ -128,7 +129,7 @@ class FrameAnnotatorPose(FrameAnnotator):
             # Drop coordinates to save space. Coordinate is used only to draw on the canvas.
             for key_coord_angle in key_coord_angles:
                 key_coord_angle.pop("coord")
-        return key_coord_angles
+        return key_coord_angles, pose_results
 
     def annotate_one_image(self, source_file_path, des_file_path, targets):
 
@@ -141,7 +142,7 @@ class FrameAnnotatorPose(FrameAnnotator):
         # Setup mediapipe Instance
         with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
             # Process One Frame
-            data = self.process_one_frame(
+            data, _ = self.process_one_frame(
                 frame,
                 targets,
                 pose,
@@ -187,13 +188,13 @@ class FrameAnnotatorPose(FrameAnnotator):
             ret, frame = cap.read()
 
             # Process One Frame
-            data = self.process_one_frame(
+            data, pose_results = self.process_one_frame(
                 frame,
                 targets,
                 model=pose,
                 mp_drawing=mp_drawing,
                 connections=mp_pose.POSE_CONNECTIONS,
-                window_name="Pose Estimation",
+                window_name=None,
                 window_shape=None,
                 styles=None
             )
@@ -206,7 +207,18 @@ class FrameAnnotatorPose(FrameAnnotator):
                 numeric_data = np.array([kka['angle'] for kka in data]).reshape(1, -1)
                 numeric_data = scaler.transform(numeric_data)
                 prediction = this_model.predict(numeric_data)
-                print(prediction)
+                text = "not using" if prediction == 0 else "using"
+                cv2.putText(frame, text, (10, 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
+
+            # Render Results
+            self.annotator_utils.render_results(
+                frame,
+                mp_drawing,
+                pose_results,
+                connections=mp_pose.POSE_CONNECTIONS,
+                window_name="Test",
+                styles=None
+            )
 
             if self.general_utils.break_loop(show_preview=False):
                 break

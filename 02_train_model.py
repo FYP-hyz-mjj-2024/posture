@@ -73,7 +73,7 @@ def get_training_data(dir_to_data, possible_labels, limit_data_num):
 def train_model(limit_data_num=None, print_report=True):
 
     """ Get Training Data"""
-    data = get_training_data("./data/train/angles/", ["using", "not_using"], limit_data_num)
+    data = get_training_data("./data/train/angles/", ["not_using", "using"], limit_data_num)
 
     df = pd.DataFrame(data)
 
