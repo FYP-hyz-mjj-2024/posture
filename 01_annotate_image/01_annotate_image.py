@@ -7,9 +7,14 @@ We don't want extra information from the images to prevent over-fitting.
 """
 
 import os
+import pickle
 import threading
 from abc import ABC, abstractmethod
 import json
+
+import numpy as np
+# SKLearn
+from sklearn.preprocessing import StandardScaler
 
 # Local
 import utils
@@ -74,7 +79,7 @@ class FrameAnnotator(ABC):
         pass
 
     @abstractmethod
-    def demo(self, cap, targets):
+    def demo(self, cap, targets, test_model=None):
         """
         Starts a webcam demo.
         :param cap: An open-cv video capture object.
@@ -123,7 +128,6 @@ class FrameAnnotatorPose(FrameAnnotator):
             # Drop coordinates to save space. Coordinate is used only to draw on the canvas.
             for key_coord_angle in key_coord_angles:
                 key_coord_angle.pop("coord")
-            key_coord_angles = json.dumps(key_coord_angles, indent=4)
         return key_coord_angles
 
     def annotate_one_image(self, source_file_path, des_file_path, targets):
@@ -147,6 +151,7 @@ class FrameAnnotatorPose(FrameAnnotator):
                 window_shape=frame_shape
             )
 
+            data = json.dumps(data, indent=4)
             # Save data if needed.
             self.general_utils.process_data(data, path=des_file_path)
 
@@ -167,7 +172,7 @@ class FrameAnnotatorPose(FrameAnnotator):
                 if self.general_utils.break_loop(show_preview=True):
                     continue
 
-    def demo(self, cap, targets):
+    def demo(self, cap, targets, model_and_scaler=None):
         print("Starting pose demo...")
 
         # Initialize Drawing Tools and Detection Model.
@@ -192,6 +197,16 @@ class FrameAnnotatorPose(FrameAnnotator):
                 window_shape=None,
                 styles=None
             )
+
+            if data is None:
+                continue
+
+            if model_and_scaler is not None:
+                this_model, scaler = model_and_scaler
+                numeric_data = np.array([kka['angle'] for kka in data]).reshape(1, -1)
+                numeric_data = scaler.transform(numeric_data)
+                prediction = this_model.predict(numeric_data)
+                print(prediction)
 
             if self.general_utils.break_loop(show_preview=False):
                 break
@@ -231,7 +246,7 @@ class FrameAnnotatorFace(FrameAnnotator):
     def batch_annotate_images(self, source_dir_path, des_dir_path, targets):
         pass
 
-    def demo(self, cap, targets):
+    def demo(self, cap, targets, test_model=None):
         print("Starting face demo...")
 
         # Initialize Drawing Tools and Detection Model.
@@ -299,6 +314,15 @@ if __name__ == "__main__":
     fa_pose = FrameAnnotatorPose(general_utils=utils, annotator_utils=pfa_utils)
     fa_face = FrameAnnotatorFace(general_utils=utils, annotator_utils=ffa_utils)
 
+    with open("../data/models/posture_classify.pkl", "rb") as f:
+        model = pickle.load(f)
+
+    with open("../data/models/posture_classify_scaler.pkl", "rb") as fs:
+        model_scaler = pickle.load(fs)
+
+    cap = utils.init_video_capture(0)
+    fa_pose.demo(cap, pose_targets, [model, model_scaler])
+
     # demo([
     #     fa_pose.demo,
     #     fa_face.demo
@@ -307,13 +331,13 @@ if __name__ == "__main__":
     #     face_targets
     # ])
 
-    fa_pose.batch_annotate_images(
-        source_dir_path="../data/train/img/using",
-        des_dir_path="../data/train/angles/using",
-        targets=pose_targets)
-
-    fa_pose.batch_annotate_images(
-        source_dir_path="../data/train/img/not_using",
-        des_dir_path="../data/train/angles/not_using",
-        targets=pose_targets)
+    # fa_pose.batch_annotate_images(
+    #     source_dir_path="../data/train/img/using",
+    #     des_dir_path="../data/train/angles/using",
+    #     targets=pose_targets)
+    #
+    # fa_pose.batch_annotate_images(
+    #     source_dir_path="../data/train/img/not_using",
+    #     des_dir_path="../data/train/angles/not_using",
+    #     targets=pose_targets)
 
