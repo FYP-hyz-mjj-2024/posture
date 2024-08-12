@@ -7,6 +7,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVR
 from sklearn.metrics import accuracy_score, classification_report
 from sklearn.metrics import mean_squared_error
 import matplotlib.pyplot as plt
@@ -72,8 +73,6 @@ def train_model(limit_data_num=None, print_report=True):
 
     """ Get Training Data"""
     data = get_training_data("./data/train/angles/", ["using", "not_using"], limit_data_num)
-    # for key in data.keys():
-    #     print(f"{key} (len={len(data[key])}): {data[key]}")
 
     df = pd.DataFrame(data)
 
@@ -90,19 +89,22 @@ def train_model(limit_data_num=None, print_report=True):
     x_test = scaler.transform(x_test)
 
     # Train the Model
-    model = RandomForestClassifier(n_estimators=200,random_state=114514+1919)
+    # model = RandomForestClassifier(n_estimators=200, random_state=114514+1919)
+    model = SVR(kernel='rbf', C=0.1)
+
     # TODO: CNN , SVR, ??
     model.fit(x_train, y_train)
 
     # Evaluate the Model
     y_pred = model.predict(x_test)
-    accuracy = accuracy_score(y_test, y_pred)
+    # accuracy = accuracy_score(y_test, y_pred)
+    mse = mean_squared_error(y_test, y_pred)
 
     if print_report:
         report = classification_report(y_test, y_pred)
         print(f"Report: {report}")
 
-    return model, accuracy
+    return model, mse
 
 
 def test_stability(num_iter):
