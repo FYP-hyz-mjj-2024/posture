@@ -1,14 +1,6 @@
 # A Posture Analysis Model to Detect Cell-Phone Usages
 
-## Start-Up
-Run `pip install -r requirements.txt`
-
-## Run
-Run `python main.py`
-
-
 # Schedules
-
 ## Step 0. Data Gathering & Feature Selection
 ### 0.0 Data Gathering
 &emsp; From arbitrary sources, gather plenty of usable image data where 
@@ -64,11 +56,28 @@ i.e., a person.
 ]
 ```
 
+## Step 2. Model Training
+### 2.0 Gather Data
+&emsp; Arrange annotated data into a single dataframe table to feed into the model.
+Suppose that there are n datapoints (i.e., people) in the dataset, each has m features 
+(e.g. joints of key angles). Therefore, the training data structure should be as follows:
+```console
+    {
+        "feature_1": [...(type=float, len = n)],
+        "feature_2": [...(type=float, len = n)],
+        "feature_3": [...(type=float, len = n)],
+        ....
+        "feature_m": [...(type=float, len = n)],
+        "labels": [...(type=int(boolean), len = n)]
+    }
+```
 
-## Phase 1. Model Training
+### 2.1 Train a Model
+&emsp; Using Random Forest / SVR / CNN, a model is trained based on the datasets. To ensure
+accuracy, random shuffle is applied to the dataset and the 100 separate model is trained at once.
+After that, select the model with the accuracy closest to 0.85 as our target model.
 
-## Notes
-### Preliminary Test of Model Training Performance
+#### Preliminary Test of Model Training Performance
 | Num of Training Data | Accuracy Std Dev |
 |----------------------|------------------|
 | 11                   | 0.18             |
