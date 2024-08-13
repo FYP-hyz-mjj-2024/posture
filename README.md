@@ -9,24 +9,23 @@ Run `python main.py`
 
 # Schedules
 
-## Phase 0. Data Preparation
-### Step 0. Data Gathering & Feature Selection
-#### 0.0 Data Gathering
+## Step 0. Data Gathering & Feature Selection
+### 0.0 Data Gathering
 &emsp; From arbitrary sources, gather plenty of usable image data where 
 the posture of a person is clearly given in the picture.
 
-#### 0.1 Feature Selection
+### 0.1 Feature Selection
 &emsp; Decide which features is used to decide whether a person is using a phone.
 A feature of a datapoint (a person) is one of the many numerical data of the person's
 skeleton. E.g., an angle of a key joint.
 
 
-### Step 1. Skeleton Extraction & Image Annotation
-#### 1.0 Extract Skeleton
+## Step 1. Skeleton Extraction & Image Annotation
+### 1.0 Extract Skeleton
 &emsp; Extract the skeleton of the person with a pre-trained model and retrieve
 the decided numerical data of the key feature. Mediapipe is used.
 
-#### 1.1 Annotate Image
+### 1.1 Annotate Image
 &emsp; For each image of a person, after extracting the key features, store this person
 into a vector of key features. Therefore, a key-feature vector represents a datapoint,
 i.e., a person.
