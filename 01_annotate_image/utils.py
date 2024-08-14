@@ -23,7 +23,7 @@ def init_video_capture(code=0):
     :param code: The capture source.
     :return:
     """
-    cap = cv2.VideoCapture(code, cv2.CAP_DSHOW)
+    cap = cv2.VideoCapture(code)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, config.capture_shape[0])
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, config.capture_shape[1])
     return cap
