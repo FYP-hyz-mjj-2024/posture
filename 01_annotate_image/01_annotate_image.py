@@ -150,17 +150,17 @@ class FrameAnnotatorPose(FrameAnnotator):
             ret, frame = cap.read()
 
             # Get key angles, and pose detection results.
-            data, pose_results = self.process_one_frame(frame, targets, model=pose)
+            key_coord_angles, pose_results = self.process_one_frame(frame, targets, model=pose)
 
             # Skip some initial frames
-            if data is None:
+            if key_coord_angles is None:
                 continue
 
             # Use the model to get the results
             if model_and_scaler is not None:
                 # Prepare the key coordinate data
                 this_model, scaler = model_and_scaler
-                _numeric_data = np.array([kka['angle'] for kka in data]).reshape(1, -1)
+                _numeric_data = np.array([kka['angle'] for kka in key_coord_angles]).reshape(1, -1)
                 numeric_data = scaler.transform(_numeric_data)
 
                 # Make the prediction
@@ -180,6 +180,7 @@ class FrameAnnotatorPose(FrameAnnotator):
                 )
 
             # Render Results
+            self.annotator_utils.render_angles(frame, key_coord_angles, window_shape=None)
             self.annotator_utils.render_results(
                 frame,
                 mp_drawing,
@@ -218,25 +219,25 @@ if __name__ == "__main__":
     """ 
     Model Prediction Demo 
     """
-    # with open("../data/models/posture_classify.pkl", "rb") as f:
-    #     model = pickle.load(f)
-    #
-    # with open("../data/models/posture_classify_scaler.pkl", "rb") as fs:
-    #     model_scaler = pickle.load(fs)
-    #
-    # cap = utils.init_video_capture(0)
-    # fa_pose.demo(cap, pose_targets, [model, model_scaler])
+    with open("../data/models/posture_classify.pkl", "rb") as f:
+        model = pickle.load(f)
+
+    with open("../data/models/posture_classify_scaler.pkl", "rb") as fs:
+        model_scaler = pickle.load(fs)
+
+    cap = utils.init_video_capture(0)
+    fa_pose.demo(cap, pose_targets, [model, model_scaler])
 
     """ 
     Image Annotation 
     """
-    fa_pose.batch_annotate_images(
-        source_dir_path="../data/train/img/using",
-        des_dir_path="../data/train/angles/using",
-        targets=pose_targets)
-
-    fa_pose.batch_annotate_images(
-        source_dir_path="../data/train/img/not_using",
-        des_dir_path="../data/train/angles/not_using",
-        targets=pose_targets)
+    # fa_pose.batch_annotate_images(
+    #     source_dir_path="../data/train/img/using",
+    #     des_dir_path="../data/train/angles/using",
+    #     targets=pose_targets)
+    #
+    # fa_pose.batch_annotate_images(
+    #     source_dir_path="../data/train/img/not_using",
+    #     des_dir_path="../data/train/angles/not_using",
+    #     targets=pose_targets)
 
