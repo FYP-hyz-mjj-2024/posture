@@ -54,18 +54,6 @@ class FrameAnnotator(ABC):
         pass
 
     @abstractmethod
-    def annotate_one_image(self, source_file_path, des_file_path, targets):
-        """
-        Extract intended key features from a frame, and use it to annotate an image.
-        The results will be written into the destination file path.
-        :param source_file_path: Path to the original image file, with .png extension.
-        :param des_file_path: Path to the destination .json file where the data is written.
-        :param targets: The intended detection targets.
-        :return: None.
-        """
-        pass
-
-    @abstractmethod
     def batch_annotate_images(self, source_dir_path, des_dir_path, targets):
         """
         Batch annotate images in a source directory. One image per file, one file per image.
@@ -128,43 +116,37 @@ class FrameAnnotatorPose(FrameAnnotator):
                 key_coord_angle.pop("coord")
         return key_coord_angles, pose_results
 
-    def annotate_one_image(self, source_file_path, des_file_path, targets):
+    def batch_annotate_images(self, source_dir_path, des_dir_path, targets):
 
         # Initialize Drawing Tools and Detection Model.
         mp_drawing, mp_pose = self.annotator_utils.init_mp()
 
-        # Initialize Media Source
-        frame, frame_shape = self.general_utils.init_image_capture(source_file_path)
-
-        # Setup mediapipe Instance
-        with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
-            # Process One Frame
-            data, _ = self.process_one_frame(
-                frame,
-                targets,
-                pose,
-                mp_drawing,
-                mp_pose.POSE_CONNECTIONS,
-                window_name="Annotation",
-                window_shape=frame_shape
-            )
-
-            data = json.dumps(data, indent=4)
-            # Save data if needed.
-            self.general_utils.process_data(data, path=des_file_path)
-
-    def batch_annotate_images(self, source_dir_path, des_dir_path, targets):
-
         for root, _, files in os.walk(source_dir_path):
             for file_name in files:
+                # Annotate one image
                 if not file_name.endswith(".png"):
                     continue
-                file_path = os.path.join(root, file_name)
-                self.annotate_one_image(
-                    file_path,
-                    os.path.join(des_dir_path, file_name.replace(".png", ".json")),
-                    targets
-                )
+                source_file_path = os.path.join(root, file_name)
+                des_file_path = os.path.join(des_dir_path, file_name.replace(".png", ".json"))
+
+                # Initialize Media Source
+                frame, frame_shape = self.general_utils.init_image_capture(source_file_path)
+
+                # Process One Frame
+                with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
+                    data, _ = self.process_one_frame(
+                        frame,
+                        targets,
+                        pose,
+                        mp_drawing,
+                        mp_pose.POSE_CONNECTIONS,
+                        window_name="Annotation",
+                        window_shape=frame_shape
+                    )
+
+                    data = json.dumps(data, indent=4)
+                    # Save data if needed.
+                    self.general_utils.process_data(data, path=des_file_path)
 
                 # TODO: This is weird. Need to fix.
                 if self.general_utils.break_loop(show_preview=True):
@@ -239,67 +221,6 @@ class FrameAnnotatorPose(FrameAnnotator):
         cap.release()
 
 
-class FrameAnnotatorFace(FrameAnnotator):
-
-    def process_one_frame(
-            self,
-            frame,
-            targets,
-            model,
-            mp_drawing,
-            connections,
-            window_name=None,
-            window_shape=None,
-            styles=None
-    ):
-        # Get detection results.
-        face_results = self.annotator_utils.get_detection_results(frame, model)
-
-        # Render results.
-        self.annotator_utils.render_results(
-            frame,
-            mp_drawing,
-            face_results,
-            connections=connections,
-            window_name=window_name,
-            styles=styles
-        )
-
-    def annotate_one_image(self, source_file_path, des_file_path, targets):
-        pass
-
-    def batch_annotate_images(self, source_dir_path, des_dir_path, targets):
-        pass
-
-    def demo(self, cap, targets, test_model=None):
-        print("Starting face demo...")
-
-        # Initialize Drawing Tools and Detection Model.
-        mp_drawing, mp_face_mesh, mp_drawing_styles = self.annotator_utils.init_mp()
-
-        # Initialize Model
-        face_mesh = mp_face_mesh.FaceMesh(
-            max_num_faces=1,
-            refine_landmarks=True,
-            min_detection_confidence=0.5,
-            min_tracking_confidence=0.5)
-
-        while cap.isOpened():
-            ret, frame = cap.read()
-
-            # Process One Frame
-            self.process_one_frame(frame, targets, model=face_mesh, mp_drawing=mp_drawing, connections=[
-                mp_face_mesh.FACEMESH_TESSELATION,
-                mp_face_mesh.FACEMESH_CONTOURS,
-                mp_face_mesh.FACEMESH_IRISES
-            ], window_name="Face Estimation", window_shape=None, styles=mp_drawing_styles)
-
-            if self.general_utils.break_loop(show_preview=False):
-                break
-
-        cap.release()
-
-
 if __name__ == "__main__":
     pose_targets = [
         # Arms
@@ -323,25 +244,25 @@ if __name__ == "__main__":
     """ 
     Model Prediction Demo 
     """
-    with open("../data/models/posture_classify.pkl", "rb") as f:
-        model = pickle.load(f)
-
-    with open("../data/models/posture_classify_scaler.pkl", "rb") as fs:
-        model_scaler = pickle.load(fs)
-
-    cap = utils.init_video_capture(0)
-    fa_pose.demo(cap, pose_targets, [model, model_scaler])
+    # with open("../data/models/posture_classify.pkl", "rb") as f:
+    #     model = pickle.load(f)
+    #
+    # with open("../data/models/posture_classify_scaler.pkl", "rb") as fs:
+    #     model_scaler = pickle.load(fs)
+    #
+    # cap = utils.init_video_capture(0)
+    # fa_pose.demo(cap, pose_targets, [model, model_scaler])
 
     """ 
     Image Annotation 
     """
-    # fa_pose.batch_annotate_images(
-    #     source_dir_path="../data/train/img/using",
-    #     des_dir_path="../data/train/angles/using",
-    #     targets=pose_targets)
-    #
-    # fa_pose.batch_annotate_images(
-    #     source_dir_path="../data/train/img/not_using",
-    #     des_dir_path="../data/train/angles/not_using",
-    #     targets=pose_targets)
+    fa_pose.batch_annotate_images(
+        source_dir_path="../data/train/img/using",
+        des_dir_path="../data/train/angles/using",
+        targets=pose_targets)
+
+    fa_pose.batch_annotate_images(
+        source_dir_path="../data/train/img/not_using",
+        des_dir_path="../data/train/angles/not_using",
+        targets=pose_targets)
 
