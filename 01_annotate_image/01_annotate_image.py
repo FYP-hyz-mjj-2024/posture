@@ -26,12 +26,7 @@ class FrameAnnotator(ABC):
         self.annotator_utils = annotator_utils
 
     @abstractmethod
-    def process_one_frame(
-            self,
-            frame,
-            targets,
-            model
-    ):
+    def process_one_frame(self, frame, targets, model):
         """
         Extract intended key features from a frame, and render the frame with the given model.
         This function may or may not show the rendered frame, depending on whether invoker has
@@ -66,12 +61,7 @@ class FrameAnnotator(ABC):
 
 class FrameAnnotatorPose(FrameAnnotator):
 
-    def process_one_frame(
-            self,
-            frame,
-            targets,
-            model
-    ):
+    def process_one_frame(self, frame, targets, model):
         # Get detection Results
         pose_results = self.annotator_utils.get_detection_results(frame, model)
 
