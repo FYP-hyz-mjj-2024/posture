@@ -190,6 +190,9 @@ class FrameAnnotatorPoseUtils(FrameAnnotatorUtils):
         :param window_shape: The shape of the window used to render the key angle values at the key coordinates.
         :return: None.
         """
+        if key_coord_angles is None:
+            return
+
         if window_shape is None:
             window_shape = config.capture_shape
 

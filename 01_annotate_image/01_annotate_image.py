@@ -30,12 +30,7 @@ class FrameAnnotator(ABC):
             self,
             frame,
             targets,
-            model,
-            mp_drawing,
-            connections,
-            window_name=None,
-            window_shape=None,
-            styles=None
+            model
     ):
         """
         Extract intended key features from a frame, and render the frame with the given model.
@@ -44,12 +39,7 @@ class FrameAnnotator(ABC):
         :param frame: A video frame or a picture frame.
         :param model: The mediapipe detection model.
         :param targets: The intended detection targets.
-        :param mp_drawing: The mediapipe drawing tool acquired by mp.solutions.drawing_utils.
-        :param connections: The frozenset(s) that determines which landmarks are connected.
-        :param window_name: The name of the opencv window. If not specified, the window will not be shown.
-        :param window_shape: The size of the window. If not specified, defaults to config value.
-        :param styles: The mediapipe drawing styles.
-        :return: The detected values. If window_name is specified, a window may appear.
+        :return: The values of the detection targets, and the coordinates of all landmarks.
         """
         pass
 
@@ -80,12 +70,7 @@ class FrameAnnotatorPose(FrameAnnotator):
             self,
             frame,
             targets,
-            model,
-            mp_drawing,
-            connections,
-            window_name=None,
-            window_shape=None,
-            styles=None
+            model
     ):
         # Get detection Results
         pose_results = self.annotator_utils.get_detection_results(frame, model)
@@ -96,24 +81,9 @@ class FrameAnnotatorPose(FrameAnnotator):
         try:
             landmarks = pose_results.pose_landmarks.landmark
             key_coord_angles = self.annotator_utils.gather_angles(landmarks, targets)
-            self.annotator_utils.render_angles(frame, key_coord_angles, window_shape)
         except Exception as e:
             print(f"Target is not in detection range. Error:{e}")
 
-        # Render Results
-        self.annotator_utils.render_results(
-            frame,
-            mp_drawing,
-            pose_results,
-            connections=connections,
-            window_name=window_name,
-            styles=styles
-        )
-
-        if key_coord_angles is not None:
-            # Drop coordinates to save space. Coordinate is used only to draw on the canvas.
-            for key_coord_angle in key_coord_angles:
-                key_coord_angle.pop("coord")
         return key_coord_angles, pose_results
 
     def batch_annotate_images(self, source_dir_path, des_dir_path, targets):
@@ -123,9 +93,12 @@ class FrameAnnotatorPose(FrameAnnotator):
 
         for root, _, files in os.walk(source_dir_path):
             for file_name in files:
+
                 # Annotate one image
                 if not file_name.endswith(".png"):
                     continue
+
+                # Specify src & des paths
                 source_file_path = os.path.join(root, file_name)
                 des_file_path = os.path.join(des_dir_path, file_name.replace(".png", ".json"))
 
@@ -134,19 +107,29 @@ class FrameAnnotatorPose(FrameAnnotator):
 
                 # Process One Frame
                 with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
-                    data, _ = self.process_one_frame(
+                    # Get the angle values and detected landmark coordinates.
+                    key_coord_angles, pose_results = self.process_one_frame(frame, targets, model=pose)
+
+                    # Render the detection
+                    self.annotator_utils.render_angles(frame, key_coord_angles, frame_shape)
+                    self.annotator_utils.render_results(
                         frame,
-                        targets,
-                        pose,
                         mp_drawing,
-                        mp_pose.POSE_CONNECTIONS,
+                        pose_results,
+                        connections=mp_pose.POSE_CONNECTIONS,
                         window_name="Annotation",
-                        window_shape=frame_shape
                     )
 
-                    data = json.dumps(data, indent=4)
+                    # Save the key data into file.
+                    if key_coord_angles is not None:
+                        # Drop coordinates of key angles to save space.
+                        # since they are only usable when rendering.
+                        for key_coord_angle in key_coord_angles:
+                            key_coord_angle.pop("coord")
+
+                    key_coord_angles = json.dumps(key_coord_angles, indent=4)
                     # Save data if needed.
-                    self.general_utils.process_data(data, path=des_file_path)
+                    self.general_utils.process_data(key_coord_angles, path=des_file_path)
 
                 # TODO: This is weird. Need to fix.
                 if self.general_utils.break_loop(show_preview=True):
@@ -167,16 +150,7 @@ class FrameAnnotatorPose(FrameAnnotator):
             ret, frame = cap.read()
 
             # Get key angles, and pose detection results.
-            data, pose_results = self.process_one_frame(
-                frame,
-                targets,
-                model=pose,
-                mp_drawing=mp_drawing,
-                connections=mp_pose.POSE_CONNECTIONS,
-                window_name=None,       # Don't rush to render now
-                window_shape=None,
-                styles=None
-            )
+            data, pose_results = self.process_one_frame(frame, targets, model=pose)
 
             # Skip some initial frames
             if data is None:
