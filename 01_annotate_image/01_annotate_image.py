@@ -74,6 +74,16 @@ class FrameAnnotatorPose(FrameAnnotator):
         except Exception as e:
             print(f"Target is not in detection range. Error:{e}")
 
+        """
+        Type of key_coord_angles:
+        [
+            {"key":str, "coord":float, "angle":float},
+            {"key":str, "coord":float, "angle":float},
+            {"key":str, "coord":float, "angle":float},
+            {"key":str, "coord":float, "angle":float},
+            ...
+        ]
+        """
         return key_coord_angles, pose_results
 
     def batch_annotate_images(self, source_dir_path, des_dir_path, targets):
