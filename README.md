@@ -1,5 +1,9 @@
 # A Posture Analysis Model to Detect Cell-Phone Usages
 
+# Methodology
+&emsp; Before talking more about the project, we would like to share our methodology.
+![methodology.png](project_documents%2FREADME_images%2Fmethodology.png)
+
 # Schedules
 ## Step 0. Data Gathering & Feature Selection
 ### 0.0 Data Gathering
