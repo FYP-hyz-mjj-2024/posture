@@ -15,8 +15,8 @@ import cv2
 import numpy as np
 
 # Local
-import utils
-from utils import FrameAnnotatorPoseUtils, FrameAnnotatorFaceUtils
+import general_utils
+from annotation_utils import FrameAnnotatorPoseUtils
 
 
 class FrameAnnotator(ABC):
@@ -201,10 +201,10 @@ if __name__ == "__main__":
     ]
 
     # Initialize Utilities
-    pfa_utils = FrameAnnotatorPoseUtils()
+    fa_pose_utils = FrameAnnotatorPoseUtils()
 
     # Inject Utilities to Annotator
-    fa_pose = FrameAnnotatorPose(general_utils=utils, annotator_utils=pfa_utils)
+    fa_pose = FrameAnnotatorPose(general_utils=general_utils, annotator_utils=fa_pose_utils)
 
     """ 
     Model Prediction Demo 
@@ -215,7 +215,7 @@ if __name__ == "__main__":
     with open("../data/models/posture_classify_scaler.pkl", "rb") as fs:
         model_scaler = pickle.load(fs)
 
-    cap = utils.init_video_capture(0)
+    cap = general_utils.init_video_capture(0)
     fa_pose.demo(cap, pose_targets, [model, model_scaler])
 
     """ 
