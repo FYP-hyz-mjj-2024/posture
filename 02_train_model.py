@@ -140,9 +140,9 @@ def test_stability(num_iter):
     return models[sorted_indexed_accuracies[0][0]], scalers[sorted_indexed_accuracies[0][0]]
 
 
-best_mode, best_scaler = test_stability(num_iter=100)
+best_model, best_scaler = test_stability(num_iter=100)
 with open('./data/models/posture_classify.pkl', 'wb') as f:
-    pickle.dump(best_mode, f)
+    pickle.dump(best_model, f)
 with open('./data/models/posture_classify_scaler.pkl', 'wb') as f:
     pickle.dump(best_scaler, f)
 
