@@ -5,6 +5,7 @@ import mediapipe as mp
 
 import config
 
+
 class FrameAnnotatorUtils(ABC):
 
     def get_detection_results(self, frame, model):
