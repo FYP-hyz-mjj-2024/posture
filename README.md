@@ -108,4 +108,12 @@ a millisecond. This is something that needs to be improved.
 pedestrians always appear together, and we could not afford to run too many instances of the model at the same time.
 Therefore, measures must be taken to allow a model to detect multiple people in a single image.
 
+&emsp; There are at least two ways of reaching this goal.
+#### 1. Mediapipe Only
+&emsp; Feed an entire frame into mediapipe, and mediapipe detects multiple set of landmarks.
+
+#### 2. YOLO + Mediapipe
+&emsp; Feed a frame into YOLO first. YOLO would extract people in the frame, and return multiple sub-images.
+Then, feed those sub-images into mediapipe one-by-one to get the skeletons of multiple people.
+
 ## To be continued...
