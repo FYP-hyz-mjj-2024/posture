@@ -44,18 +44,20 @@ class FrameAnnotator(ABC):
         """
         Batch annotate images in a source directory. One image per file, one file per image.
         :param source_dir_path: Source directory that stores all the images to be annotated.
-        :param des_dir_path: Destination directory that stores all the result files.
+        :param des_file: File path to the destination csv file.
         :param targets: The intended detection targets for each annotation.
+        :param labels: The label for this annotation batch.
         :return: None.
         """
         pass
 
     @abstractmethod
-    def demo(self, cap, targets, test_model=None):
+    def demo(self, cap, targets, model_and_scaler=None):
         """
         Starts a webcam demo.
         :param cap: An open-cv video capture object.
         :param targets: The intended detection targets.
+        :param model_and_scaler: A tuple of model-scaler object used to make predictions on the input data.
         """
         pass
 
@@ -87,7 +89,7 @@ class FrameAnnotatorPose(FrameAnnotator):
         """
         return key_coord_angles, pose_results
 
-    def batch_annotate_images(self, source_dir, des_file, targets, labels):
+    def batch_annotate_images(self, source_dir, des_file, targets, label):
 
         # Initialize Drawing Tools and Detection Model.
         mp_drawing, mp_pose = self.annotator_utils.init_mp()
@@ -144,7 +146,7 @@ class FrameAnnotatorPose(FrameAnnotator):
 
         # Save the dataframe into csv.
         df = pd.DataFrame.from_dict(df_data)
-        df['labels'] = 0 if labels == "not_using" else 1
+        df['labels'] = label
         df.to_csv(des_file, index=False)
         print(df)
 
@@ -178,7 +180,13 @@ class FrameAnnotatorPose(FrameAnnotator):
 
                 # Make the prediction
                 prediction = this_model.predict(numeric_data)
-                text = "not using" if prediction == 0 else "using"
+                match prediction:
+                    case 0:
+                        text = "not using"
+                    case 1:
+                        text = "using"
+                    case _:
+                        text = "unknown"
 
                 # Put the prediction results on the frame
                 cv2.putText(
@@ -226,11 +234,11 @@ if __name__ == "__main__":
         source_dir="../data/train/img/using",
         des_file="../data/train/using.csv",
         targets=pose_targets,
-        labels="using")
+        label=1)
 
     fa_pose.batch_annotate_images(
         source_dir="../data/train/img/not_using",
         des_file="../data/train/not_using.csv",
         targets=pose_targets,
-        labels="not_using")
+        label=0)
 
