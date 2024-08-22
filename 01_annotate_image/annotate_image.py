@@ -13,6 +13,7 @@ from abc import ABC, abstractmethod
 import json
 import cv2
 import numpy as np
+import pandas as pd
 
 # Local
 import utils_general as utils
@@ -91,9 +92,11 @@ class FrameAnnotatorPose(FrameAnnotator):
         # Initialize Drawing Tools and Detection Model.
         mp_drawing, mp_pose = self.annotator_utils.init_mp()
 
+        #
+        df_data = {}
+
         for root, _, files in os.walk(source_dir_path):
             for file_name in files:
-
                 # Annotate one image
                 if not file_name.endswith(".png"):
                     continue
@@ -127,6 +130,13 @@ class FrameAnnotatorPose(FrameAnnotator):
                         for key_coord_angle in key_coord_angles:
                             key_coord_angle.pop("coord")
 
+                    # TODO: Use dataframe.
+                    for key_angle in key_coord_angles:
+                        if key_angle["key"] not in df_data:
+                            df_data[key_angle["key"]] = [key_angle["angle"]]
+                        else:
+                            df_data[key_angle["key"]].append(key_angle["angle"])
+
                     key_coord_angles = json.dumps(key_coord_angles, indent=4)
                     # Save data if needed.
                     self.general_utils.process_data(key_coord_angles, path=des_file_path)
@@ -134,6 +144,9 @@ class FrameAnnotatorPose(FrameAnnotator):
                 # TODO: This is weird. Need to fix.
                 if self.general_utils.break_loop(show_preview=True):
                     continue
+
+        df = pd.DataFrame.from_dict(df_data, orient="index")
+        print(df)
 
     def demo(self, cap, targets, model_and_scaler=None):
         print("Starting pose demo...")
