@@ -79,7 +79,16 @@ Suppose that there are n datapoints (i.e., people) in the dataset, each has m fe
 ### 2.1 Train a Model
 &emsp; Using Random Forest / SVR / CNN, a model is trained based on the datasets. To ensure
 accuracy, random shuffle is applied to the dataset and the 100 separate model is trained at once.
-After that, select the model with the accuracy closest to 0.85 as our target model.
+After that, select the model with the accuracy closest to 0.85 as our target model (temporary measure).
+
+### 2.2 Stability & Reliability
+&emsp; Currently, there are two kinds of instabilities.
+
+&esmp; Firstly, the training accuracies are unstable. As we train 100 models at the same time (without one interfering
+another), the accuracy fluctuates quite evidently and the standard deviation is high. According to our discussion,
+there are many reasons for this to happen, e.g., inadequacy of data samples, bad model/training method usages, etc. 
+However, we are not sure whether this is really unacceptable or not, since we selected the model with the accuracy 
+closest to 0.85 as our target model among the 100 trained ones, and it performed "visibly" better than expected.
 
 #### Preliminary Test of Model Training Performance
 | Num of Training Data | Accuracy Std Dev |
@@ -88,3 +97,15 @@ After that, select the model with the accuracy closest to 0.85 as our target mod
 | 21                   | 0.13             |
 | 31                   | 0.10             |
 | 40                   | 0.09             |
+
+&emsp; Secondly, the model selected itself is not stable. During the demo, we have encountered a *jump* in the 
+classification text. To be specific, it occasionally glitches between "using" & "not using" in a very short time, like
+a millisecond. This is something that needs to be improved.
+
+## Step 3. Model Application
+### 3.0 Multi-Personal Detection
+&emsp; To enable the model to detect multiple people in a single image. This is very important because that the
+pedestrians always appear together, and we could not afford to run too many instances of the model at the same time.
+Therefore, measures must be taken to allow a model to detect multiple people in a single image.
+
+## To be continued...
