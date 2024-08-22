@@ -1,9 +1,6 @@
-import os
-import json
-import random
+# Packages
 import pandas as pd
 import numpy as np
-
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
@@ -14,68 +11,29 @@ import matplotlib.pyplot as plt
 import pickle
 
 
-def batch_get_data(data_dir, label, limit_data_num=None):
-    people = []
-    for root, _, files in os.walk(data_dir):
-        for i, file_name in enumerate(files):
-            if limit_data_num is not None and i == limit_data_num:
-                break
-            if not file_name.endswith(".json"):
-                continue
-            file_path = os.path.join(root, file_name)
-            with open(file_path, "r") as f:
-                data = json.load(f)
-                key_angles = [dat['angle'] for dat in data]
-                people.append((label, key_angles))
-
-    return people
-
-
-def get_training_data(dir_to_data, possible_labels, limit_data_num):
+def get_training_df(paths) -> pd.DataFrame:
     """
-    Suppose there are n datapoints in the dataset. Each has m features.
-    Training data structure:
-    {
-        "feature_1": [...(type=float, len = n)],
-        "feature_2": [...(type=float, len = n)],
-        "feature_3": [...(type=float, len = n)],
-        ....
-        "feature_m": [...(type=float, len = n)],
-        "labels": [...(type=int(boolean), len = n)]
-    }
-    :return:
+    Load the csv files from the given paths.
+    Merge and shuffle them to get a training dataframe.
+    :param paths: Paths to the csv files.
+    :return: Dataframe
     """
+    start_df = None
+    for path in paths:
+        this_df = pd.read_csv(path)
+        if start_df is None:
+            start_df = this_df
+        else:
+            start_df = pd.concat([start_df, this_df])
 
-    # Extract training data from json
-    _train_data = []
-    for label in possible_labels:
-        _train_data += batch_get_data(os.path.join(dir_to_data, label), label, limit_data_num)
-
-    # Shuffle data
-    random.shuffle(_train_data)
-
-    # Create scikit-learn data
-    train_data = {}
-    labels = []
-    for i, data in enumerate(_train_data):
-        label, quadruple = data
-        for fi, feature in enumerate(quadruple):
-            feature_name = f"feature_{fi}"
-            if feature_name not in train_data:
-                train_data[feature_name] = []
-            train_data[feature_name].append(feature)
-        labels.append(possible_labels.index(label))
-    train_data["labels"] = labels
-
-    return train_data
+    df = start_df.sample(frac=1).reset_index(drop=True)
+    return df
 
 
 def train_model(limit_data_num=None, print_report=True):
 
     """ Get Training Data"""
-    data = get_training_data("./data/train/angles/", ["not_using", "using"], limit_data_num)
-
-    df = pd.DataFrame(data)
+    df = get_training_df(["../data/train/using.csv", "../data/train/not_using.csv"])
 
     # Split the data into features and labels
     x = df.iloc[:, :-1].values
@@ -108,7 +66,7 @@ def train_model(limit_data_num=None, print_report=True):
     return model, scaler, accuracy
 
 
-def test_stability(num_iter):
+def batch_train_models(num_iter):
     iterations = [i for i in range(num_iter)]
     accuracies = []
     models = []
@@ -140,9 +98,9 @@ def test_stability(num_iter):
     return models[sorted_indexed_accuracies[0][0]], scalers[sorted_indexed_accuracies[0][0]]
 
 
-best_model, best_scaler = test_stability(num_iter=100)
-with open('./data/models/posture_classify.pkl', 'wb') as f:
+best_model, best_scaler = batch_train_models(num_iter=100)
+with open('../data/models/posture_classify.pkl', 'wb') as f:
     pickle.dump(best_model, f)
-with open('./data/models/posture_classify_scaler.pkl', 'wb') as f:
+with open('../data/models/posture_classify_scaler.pkl', 'wb') as f:
     pickle.dump(best_scaler, f)
 

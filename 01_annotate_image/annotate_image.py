@@ -40,7 +40,7 @@ class FrameAnnotator(ABC):
         pass
 
     @abstractmethod
-    def batch_annotate_images(self, source_dir_path, des_dir_path, targets):
+    def batch_annotate_images(self, source_dir_path, des_file, targets, labels):
         """
         Batch annotate images in a source directory. One image per file, one file per image.
         :param source_dir_path: Source directory that stores all the images to be annotated.
@@ -87,28 +87,28 @@ class FrameAnnotatorPose(FrameAnnotator):
         """
         return key_coord_angles, pose_results
 
-    def batch_annotate_images(self, source_dir_path, des_dir_path, targets):
+    def batch_annotate_images(self, source_dir, des_file, targets, labels):
 
         # Initialize Drawing Tools and Detection Model.
         mp_drawing, mp_pose = self.annotator_utils.init_mp()
 
-        #
+        # Initialize an empty dataframe.
         df_data = {}
 
-        for root, _, files in os.walk(source_dir_path):
+        # Run through all the files.
+        for root, _, files in os.walk(source_dir):
             for file_name in files:
                 # Annotate one image
                 if not file_name.endswith(".png"):
                     continue
 
-                # Specify src & des paths
+                # Specify src path.
                 source_file_path = os.path.join(root, file_name)
-                des_file_path = os.path.join(des_dir_path, file_name.replace(".png", ".json"))
 
-                # Initialize Media Source
+                # Get image.
                 frame, frame_shape = self.general_utils.init_image_capture(source_file_path)
 
-                # Process One Frame
+                # From this image, get the key angles.
                 with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
                     # Get the angle values and detected landmark coordinates.
                     key_coord_angles, pose_results = self.process_one_frame(frame, targets, model=pose)
@@ -129,23 +129,23 @@ class FrameAnnotatorPose(FrameAnnotator):
                         # since they are only usable when rendering.
                         for key_coord_angle in key_coord_angles:
                             key_coord_angle.pop("coord")
+                            # key_coord_angle["labels"] = 0 if labels == "not_using" else 1
 
-                    # TODO: Use dataframe.
+                    # Save angle vector into dataframe.
                     for key_angle in key_coord_angles:
                         if key_angle["key"] not in df_data:
                             df_data[key_angle["key"]] = [key_angle["angle"]]
                         else:
                             df_data[key_angle["key"]].append(key_angle["angle"])
 
-                    key_coord_angles = json.dumps(key_coord_angles, indent=4)
-                    # Save data if needed.
-                    self.general_utils.process_data(key_coord_angles, path=des_file_path)
-
                 # TODO: This is weird. Need to fix.
                 if self.general_utils.break_loop(show_preview=True):
                     continue
 
-        df = pd.DataFrame.from_dict(df_data, orient="index")
+        # Save the dataframe into csv.
+        df = pd.DataFrame.from_dict(df_data)
+        df['labels'] = 0 if labels == "not_using" else 1
+        df.to_csv(des_file, index=False)
         print(df)
 
     def demo(self, cap, targets, model_and_scaler=None):
@@ -223,12 +223,14 @@ if __name__ == "__main__":
     Image Annotation 
     """
     fa_pose.batch_annotate_images(
-        source_dir_path="../data/train/img/using",
-        des_dir_path="../data/train/angles/using",
-        targets=pose_targets)
+        source_dir="../data/train/img/using",
+        des_file="../data/train/using.csv",
+        targets=pose_targets,
+        labels="using")
 
     fa_pose.batch_annotate_images(
-        source_dir_path="../data/train/img/not_using",
-        des_dir_path="../data/train/angles/not_using",
-        targets=pose_targets)
+        source_dir="../data/train/img/not_using",
+        des_file="../data/train/not_using.csv",
+        targets=pose_targets,
+        labels="not_using")
 
