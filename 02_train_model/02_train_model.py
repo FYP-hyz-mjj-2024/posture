@@ -66,22 +66,32 @@ def train_model(limit_data_num=None, print_report=True):
     return model, scaler, accuracy
 
 
-def batch_train_models(num_iter):
+def batch_train_models(num_iter, preferred_accuracy=0.85):
+    """
+    Train model numerous times separately, and select the best model.
+    The best model is suggested to have a high yet mediocre accuracy.
+    :param num_iter: Number of iterations, i.e., the number of models.
+    :param preferred_accuracy: The preferred accuracy. The model with an accuracy that's
+    closes to this number will be regarded as the "best model" and selected into production.
+    """
     iterations = [i for i in range(num_iter)]
-    accuracies = []
-    models = []
-    scalers = []
+    batch = {
+        "accuracies": [],
+        "models": [],
+        "scalers": []
+    }
+
     for i in range(num_iter):
         model, scaler, acc = train_model(print_report=False)
         print(f"\033[A\033[2K Iteration: {i}, Accuracy: {round(acc, 4)}")
-        accuracies.append(acc)
-        models.append(model)
-        scalers.append(scaler)
+        batch['accuracies'].append(acc)
+        batch['models'].append(model)
+        batch['scalers'].append(scaler)
 
-    mean = np.mean(accuracies)
-    std_dev = np.std(accuracies)
+    mean = np.mean(batch['accuracies'])
+    std_dev = np.std(batch['accuracies'])
 
-    plt.plot(iterations, accuracies, label=f"Training Accuracies, Std Dev={round(std_dev, 4)}")
+    plt.plot(iterations, batch['accuracies'], label=f"Training Accuracies, Std Dev={round(std_dev, 4)}")
     plt.plot(iterations, [mean for _ in range(len(iterations))], label=f"Mean={mean}")
     plt.title("Training Accuracies")
     plt.xlabel("Training Iterations")
@@ -91,14 +101,14 @@ def batch_train_models(num_iter):
     plt.show()
 
     # Select the model with an accuracy that's closest to 0.85
-    indexed_accuracies = list(enumerate(accuracies))
-    sorted_indexed_accuracies = sorted(indexed_accuracies, key=lambda x: abs(x[1] - 0.85))
+    indexed_accuracies = list(enumerate(batch['accuracies']))
+    sorted_indexed_accuracies = sorted(indexed_accuracies, key=lambda x: abs(x[1] - preferred_accuracy))
     print(sorted_indexed_accuracies)
 
-    return models[sorted_indexed_accuracies[0][0]], scalers[sorted_indexed_accuracies[0][0]]
+    return batch['models'][sorted_indexed_accuracies[0][0]], batch['scalers'][sorted_indexed_accuracies[0][0]]
 
 
-best_model, best_scaler = batch_train_models(num_iter=100)
+best_model, best_scaler = batch_train_models(num_iter=100, preferred_accuracy=0.87)
 with open('../data/models/posture_classify.pkl', 'wb') as f:
     pickle.dump(best_model, f)
 with open('../data/models/posture_classify_scaler.pkl', 'wb') as f:
