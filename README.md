@@ -84,7 +84,7 @@ After that, select the model with the accuracy closest to 0.85 as our target mod
 ### 2.2 Stability & Reliability
 &emsp; Currently, there are two kinds of instabilities.
 
-&esmp; Firstly, the training accuracies are unstable. As we train 100 models at the same time (without one interfering
+&emsp; Firstly, the training accuracies are unstable. As we train 100 models at the same time (without one interfering
 another), the accuracy fluctuates quite evidently and the standard deviation is high. According to our discussion,
 there are many reasons for this to happen, e.g., inadequacy of data samples, bad model/training method usages, etc. 
 However, we are not sure whether this is really unacceptable or not, since we selected the model with the accuracy 
