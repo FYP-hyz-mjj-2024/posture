@@ -6,11 +6,11 @@ The target values are numerical to fit into further model training, e.g., the an
 We don't want extra information from the images to prevent over-fitting.
 """
 
+# Package
 import os
 import pickle
 from abc import ABC, abstractmethod
 import json
-
 import cv2
 import numpy as np
 
