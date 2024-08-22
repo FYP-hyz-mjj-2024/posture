@@ -208,6 +208,8 @@ if __name__ == "__main__":
         [("Right_shoulder", "Left_shoulder"), "Nose"],
         [("Right_eye_outer", "Nose"), "Right_shoulder"],
         [("Left_eye_outer", "Nose"), "Left_shoulder"],
+        [("Right_eye", "Right_ear"), "Right_eye_outer"],
+        [("Left_eye", "Left_ear"), "Left_eye_outer"],
     ]
 
     # Initialize Utilities

@@ -26,5 +26,13 @@
     {
         "key": "Left_eye_outer-Left_shoulder-Nose",
         "angle": 11.31
+    },
+    {
+        "key": "Right_eye-Right_eye_outer-Right_ear",
+        "angle": 162.182
+    },
+    {
+        "key": "Left_eye-Left_eye_outer-Left_ear",
+        "angle": 157.975
     }
 ]
