@@ -13,6 +13,7 @@ from abc import ABC, abstractmethod
 import json
 import cv2
 import numpy as np
+import pandas as pd
 
 # Local
 import utils_general as utils
@@ -39,22 +40,24 @@ class FrameAnnotator(ABC):
         pass
 
     @abstractmethod
-    def batch_annotate_images(self, source_dir_path, des_dir_path, targets):
+    def batch_annotate_images(self, source_dir_path, des_file, targets, labels):
         """
         Batch annotate images in a source directory. One image per file, one file per image.
         :param source_dir_path: Source directory that stores all the images to be annotated.
-        :param des_dir_path: Destination directory that stores all the result files.
+        :param des_file: File path to the destination csv file.
         :param targets: The intended detection targets for each annotation.
+        :param labels: The label for this annotation batch.
         :return: None.
         """
         pass
 
     @abstractmethod
-    def demo(self, cap, targets, test_model=None):
+    def demo(self, cap, targets, model_and_scaler=None):
         """
         Starts a webcam demo.
         :param cap: An open-cv video capture object.
         :param targets: The intended detection targets.
+        :param model_and_scaler: A tuple of model-scaler object used to make predictions on the input data.
         """
         pass
 
@@ -86,26 +89,28 @@ class FrameAnnotatorPose(FrameAnnotator):
         """
         return key_coord_angles, pose_results
 
-    def batch_annotate_images(self, source_dir_path, des_dir_path, targets):
+    def batch_annotate_images(self, source_dir, des_file, targets, label):
 
         # Initialize Drawing Tools and Detection Model.
         mp_drawing, mp_pose = self.annotator_utils.init_mp()
 
-        for root, _, files in os.walk(source_dir_path):
-            for file_name in files:
+        # Initialize an empty dataframe.
+        df_data = {}
 
+        # Run through all the files.
+        for root, _, files in os.walk(source_dir):
+            for file_name in files:
                 # Annotate one image
                 if not file_name.endswith(".png"):
                     continue
 
-                # Specify src & des paths
+                # Specify src path.
                 source_file_path = os.path.join(root, file_name)
-                des_file_path = os.path.join(des_dir_path, file_name.replace(".png", ".json"))
 
-                # Initialize Media Source
+                # Get image.
                 frame, frame_shape = self.general_utils.init_image_capture(source_file_path)
 
-                # Process One Frame
+                # From this image, get the key angles.
                 with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
                     # Get the angle values and detected landmark coordinates.
                     key_coord_angles, pose_results = self.process_one_frame(frame, targets, model=pose)
@@ -126,14 +131,24 @@ class FrameAnnotatorPose(FrameAnnotator):
                         # since they are only usable when rendering.
                         for key_coord_angle in key_coord_angles:
                             key_coord_angle.pop("coord")
+                            # key_coord_angle["labels"] = 0 if labels == "not_using" else 1
 
-                    key_coord_angles = json.dumps(key_coord_angles, indent=4)
-                    # Save data if needed.
-                    self.general_utils.process_data(key_coord_angles, path=des_file_path)
+                    # Save angle vector into dataframe.
+                    for key_angle in key_coord_angles:
+                        if key_angle["key"] not in df_data:
+                            df_data[key_angle["key"]] = [key_angle["angle"]]
+                        else:
+                            df_data[key_angle["key"]].append(key_angle["angle"])
 
                 # TODO: This is weird. Need to fix.
                 if self.general_utils.break_loop(show_preview=True):
                     continue
+
+        # Save the dataframe into csv.
+        df = pd.DataFrame.from_dict(df_data)
+        df['labels'] = label
+        df.to_csv(des_file, index=False)
+        print(df)
 
     def demo(self, cap, targets, model_and_scaler=None):
         print("Starting pose demo...")
@@ -165,7 +180,13 @@ class FrameAnnotatorPose(FrameAnnotator):
 
                 # Make the prediction
                 prediction = this_model.predict(numeric_data)
-                text = "not using" if prediction == 0 else "using"
+                match prediction:
+                    case 0:
+                        text = "not using"
+                    case 1:
+                        text = "using"
+                    case _:
+                        text = "unknown"
 
                 # Put the prediction results on the frame
                 cv2.putText(
@@ -197,20 +218,8 @@ class FrameAnnotatorPose(FrameAnnotator):
 
 
 if __name__ == "__main__":
-    pose_targets = [
-        # Arms
-        [("Left_shoulder", "Left_wrist"), "Left_elbow"],
-        [("Right_shoulder", "Right_wrist"), "Right_elbow"],
-        [("Left_hip", "Left_elbow"), "Left_shoulder"],
-        [("Right_hip", "Right_elbow"), "Right_shoulder"],
-
-        # Face-Shoulder
-        [("Right_shoulder", "Left_shoulder"), "Nose"],
-        [("Right_eye_outer", "Nose"), "Right_shoulder"],
-        [("Left_eye_outer", "Nose"), "Left_shoulder"],
-        [("Right_eye", "Right_ear"), "Right_eye_outer"],
-        [("Left_eye", "Left_ear"), "Left_eye_outer"],
-    ]
+    # Initialize Detection Targets
+    pose_targets = utils.get_detection_targets()
 
     # Initialize Utilities
     fa_pose_utils = FrameAnnotatorPoseUtils()
@@ -219,27 +228,17 @@ if __name__ == "__main__":
     fa_pose = FrameAnnotatorPose(general_utils=utils, annotator_utils=fa_pose_utils)
 
     """ 
-    Model Prediction Demo 
-    """
-    with open("../data/models/posture_classify.pkl", "rb") as f:
-        model = pickle.load(f)
-
-    with open("../data/models/posture_classify_scaler.pkl", "rb") as fs:
-        model_scaler = pickle.load(fs)
-
-    cap = utils.init_video_capture(0)
-    fa_pose.demo(cap, pose_targets, [model, model_scaler])
-
-    """ 
     Image Annotation 
     """
-    # fa_pose.batch_annotate_images(
-    #     source_dir_path="../data/train/img/using",
-    #     des_dir_path="../data/train/angles/using",
-    #     targets=pose_targets)
-    #
-    # fa_pose.batch_annotate_images(
-    #     source_dir_path="../data/train/img/not_using",
-    #     des_dir_path="../data/train/angles/not_using",
-    #     targets=pose_targets)
+    fa_pose.batch_annotate_images(
+        source_dir="../data/train/img/using",
+        des_file="../data/train/using.csv",
+        targets=pose_targets,
+        label=1)
+
+    fa_pose.batch_annotate_images(
+        source_dir="../data/train/img/not_using",
+        des_file="../data/train/not_using.csv",
+        targets=pose_targets,
+        label=0)
 
