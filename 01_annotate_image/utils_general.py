@@ -2,6 +2,10 @@ import cv2
 import config
 
 
+def get_detection_targets():
+    return config.pose_targets
+
+
 def init_image_capture(file_path):
     """
     Initialize an image capture source from a file.

@@ -197,20 +197,8 @@ class FrameAnnotatorPose(FrameAnnotator):
 
 
 if __name__ == "__main__":
-    pose_targets = [
-        # Arms
-        [("Left_shoulder", "Left_wrist"), "Left_elbow"],
-        [("Right_shoulder", "Right_wrist"), "Right_elbow"],
-        [("Left_hip", "Left_elbow"), "Left_shoulder"],
-        [("Right_hip", "Right_elbow"), "Right_shoulder"],
-
-        # Face-Shoulder
-        [("Right_shoulder", "Left_shoulder"), "Nose"],
-        [("Right_eye_outer", "Nose"), "Right_shoulder"],
-        [("Left_eye_outer", "Nose"), "Left_shoulder"],
-        [("Right_eye", "Right_ear"), "Right_eye_outer"],
-        [("Left_eye", "Left_ear"), "Left_eye_outer"],
-    ]
+    # Initialize Detection Targets
+    pose_targets = utils.get_detection_targets()
 
     # Initialize Utilities
     fa_pose_utils = FrameAnnotatorPoseUtils()
@@ -219,27 +207,15 @@ if __name__ == "__main__":
     fa_pose = FrameAnnotatorPose(general_utils=utils, annotator_utils=fa_pose_utils)
 
     """ 
-    Model Prediction Demo 
-    """
-    with open("../data/models/posture_classify.pkl", "rb") as f:
-        model = pickle.load(f)
-
-    with open("../data/models/posture_classify_scaler.pkl", "rb") as fs:
-        model_scaler = pickle.load(fs)
-
-    cap = utils.init_video_capture(0)
-    fa_pose.demo(cap, pose_targets, [model, model_scaler])
-
-    """ 
     Image Annotation 
     """
-    # fa_pose.batch_annotate_images(
-    #     source_dir_path="../data/train/img/using",
-    #     des_dir_path="../data/train/angles/using",
-    #     targets=pose_targets)
-    #
-    # fa_pose.batch_annotate_images(
-    #     source_dir_path="../data/train/img/not_using",
-    #     des_dir_path="../data/train/angles/not_using",
-    #     targets=pose_targets)
+    fa_pose.batch_annotate_images(
+        source_dir_path="../data/train/img/using",
+        des_dir_path="../data/train/angles/using",
+        targets=pose_targets)
+
+    fa_pose.batch_annotate_images(
+        source_dir_path="../data/train/img/not_using",
+        des_dir_path="../data/train/angles/not_using",
+        targets=pose_targets)
 

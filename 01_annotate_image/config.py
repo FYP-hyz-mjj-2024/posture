@@ -43,3 +43,18 @@ lm_pose = {
     "Left_foot_index": 31,
     "Right_foot_index": 32,
 }
+
+pose_targets = [
+    # Arms
+    [("Left_shoulder", "Left_wrist"), "Left_elbow"],
+    [("Right_shoulder", "Right_wrist"), "Right_elbow"],
+    [("Left_hip", "Left_elbow"), "Left_shoulder"],
+    [("Right_hip", "Right_elbow"), "Right_shoulder"],
+
+    # Face-Shoulder
+    [("Right_shoulder", "Left_shoulder"), "Nose"],
+    [("Right_eye_outer", "Nose"), "Right_shoulder"],
+    [("Left_eye_outer", "Nose"), "Left_shoulder"],
+    [("Right_eye", "Right_ear"), "Right_eye_outer"],
+    [("Left_eye", "Left_ear"), "Left_eye_outer"],
+]
