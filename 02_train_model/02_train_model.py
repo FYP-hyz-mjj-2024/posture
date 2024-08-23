@@ -49,7 +49,7 @@ def train_model(limit_data_num=None, print_report=True):
 
     # Train the Model
     model = RandomForestClassifier(n_estimators=200, random_state=114514+1919)
-    # model = SVR(kernel='rbf', C=0.1)
+    # YOLO_model = SVR(kernel='rbf', C=0.1)
 
     # TODO: CNN , SVR, ??
     model.fit(x_train, y_train)
@@ -68,11 +68,11 @@ def train_model(limit_data_num=None, print_report=True):
 
 def batch_train_models(num_iter, preferred_accuracy=0.85):
     """
-    Train model numerous times separately, and select the best model.
-    The best model is suggested to have a high yet mediocre accuracy.
+    Train YOLO_model numerous times separately, and select the best YOLO_model.
+    The best YOLO_model is suggested to have a high yet mediocre accuracy.
     :param num_iter: Number of iterations, i.e., the number of models.
-    :param preferred_accuracy: The preferred accuracy. The model with an accuracy that's
-    closes to this number will be regarded as the "best model" and selected into production.
+    :param preferred_accuracy: The preferred accuracy. The YOLO_model with an accuracy that's
+    closes to this number will be regarded as the "best YOLO_model" and selected into production.
     """
     iterations = [i for i in range(num_iter)]
     batch = {
@@ -100,7 +100,7 @@ def batch_train_models(num_iter, preferred_accuracy=0.85):
     plt.grid(True)
     plt.show()
 
-    # Select the model with an accuracy that's closest to 0.85
+    # Select the YOLO_model with an accuracy that's closest to 0.85
     indexed_accuracies = list(enumerate(batch['accuracies']))
     sorted_indexed_accuracies = sorted(indexed_accuracies, key=lambda x: abs(x[1] - preferred_accuracy))
     print(sorted_indexed_accuracies)
