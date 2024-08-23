@@ -2,15 +2,13 @@
 01. Annotate image.
 @author: Huang Yanzhen, Mai Jiajun
 This file is used to annotate images. By annotate, we mean to extract target values from images using posture detection.
-The target values are numerical to fit into further model training, e.g., the angle of the elbow, etc.
+The target values are numerical to fit into further YOLO_model training, e.g., the angle of the elbow, etc.
 We don't want extra information from the images to prevent over-fitting.
 """
 
 # Package
 import os
-import pickle
 from abc import ABC, abstractmethod
-import json
 import cv2
 import numpy as np
 import pandas as pd
@@ -29,11 +27,11 @@ class FrameAnnotator(ABC):
     @abstractmethod
     def process_one_frame(self, frame, targets, model):
         """
-        Extract intended key features from a frame, and render the frame with the given model.
+        Extract intended key features from a frame, and render the frame with the given YOLO_model.
         This function may or may not show the rendered frame, depending on whether invoker has
         specified the parameter window_name.
         :param frame: A video frame or a picture frame.
-        :param model: The mediapipe detection model.
+        :param model: The mediapipe detection YOLO_model.
         :param targets: The intended detection targets.
         :return: The values of the detection targets, and the coordinates of all landmarks.
         """
@@ -57,7 +55,7 @@ class FrameAnnotator(ABC):
         Starts a webcam demo.
         :param cap: An open-cv video capture object.
         :param targets: The intended detection targets.
-        :param model_and_scaler: A tuple of model-scaler object used to make predictions on the input data.
+        :param model_and_scaler: A tuple of YOLO_model-scaler object used to make predictions on the input data.
         """
         pass
 
@@ -171,7 +169,7 @@ class FrameAnnotatorPose(FrameAnnotator):
             if key_coord_angles is None:
                 continue
 
-            # Use the model to get the results
+            # Use the YOLO_model to get the results
             if model_and_scaler is not None:
                 # Prepare the key coordinate data
                 this_model, scaler = model_and_scaler

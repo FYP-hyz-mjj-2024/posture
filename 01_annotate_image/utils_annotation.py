@@ -10,16 +10,16 @@ class FrameAnnotatorUtils(ABC):
 
     def get_detection_results(self, frame, model):
         """
-        Get the detection results for this frame with the given model.
+        Get the detection results for this frame with the given YOLO_model.
         :param frame: An image frame from any source acquired from opencv-python.
-        :param model: A mediapipe detection model acquired with mp.solutions.<model_name>.
+        :param model: A mediapipe detection YOLO_model acquired with mp.solutions.<model_name>.
         :return: The detection results.
         """
         # Re-color image: BGR (opencv preferred) -> RGB (mediapipe preferred)
         image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         image.flags.writeable = False
 
-        # Pose detection with model
+        # Pose detection with YOLO_model
         results = model.process(image)
 
         return results
@@ -63,7 +63,7 @@ class FrameAnnotatorPoseUtils(FrameAnnotatorUtils):
         """
         Initialize mediapipe essentials. Including
         - Mediapipe drawing tools.
-        - Mediapipe posture detection model (pose).
+        - Mediapipe posture detection YOLO_model (pose).
         :return: Drawing Utilities, Pose Model
         """
 
@@ -91,7 +91,7 @@ class FrameAnnotatorPoseUtils(FrameAnnotatorUtils):
         """
         Calculate the angle based on the given edge landmarks and the middle landmark.
         The landmarks are specified with the standard name.
-        :param landmarks: All the landmarks detected with the model.
+        :param landmarks: All the landmarks detected with the YOLO_model.
         :param edge_lm_names: Names of the intended edge landmarks.
         :param mid_lm_name: Names of the intended middle landmarks.
         :return: The degree value of the angle.
@@ -106,7 +106,7 @@ class FrameAnnotatorPoseUtils(FrameAnnotatorUtils):
     def gather_angles(self, landmarks, targets, round_to=3):
         """
         Gather the angles based on the given targets.
-        :param landmarks: All the landmarks detected with the model.
+        :param landmarks: All the landmarks detected with the YOLO_model.
         :param targets: The list of targets to be gathered. Each target is a specific angle value in degrees.
         To specify one target, give a list like this: [("left_lm_name","right_lm_name"), "mid_lm_name"].
         To specify a list of targets, give a list of them.
