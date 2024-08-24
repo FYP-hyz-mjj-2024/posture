@@ -1,8 +1,5 @@
 import cv2
 import torch
-from PIL import Image
-from pathlib import Path
-import numpy as np
 
 
 def crop_pedestrians(img_matrix):
