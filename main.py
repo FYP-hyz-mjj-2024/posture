@@ -1,5 +1,6 @@
 import cv2
 import pickle
+import torch
 import numpy as np
 import step01_annotate_image.utils_general as utils_general
 from step01_annotate_image.annotate_image import FrameAnnotatorPose, FrameAnnotatorPoseUtils
@@ -18,22 +19,11 @@ fa_pose = FrameAnnotatorPose(
 # Get Mediapipe Model Instance
 mp_drawing, mp_pose = fa_pose_utils.init_mp()
 
-""" Models """
-# Initialize Mediapipe Model
-pose = mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
-
-# Self-trained Classification Model
-with open("./data/models/posture_classify.pkl", "rb") as f:
-    stc_model = pickle.load(f)
-
-with open("./data/models/posture_classify_scaler.pkl", "rb") as fs:
-    stc_model_scaler = pickle.load(fs)
-
 
 # Process One Frame
-def process_one_frame(frame):
+def process_one_frame(frame_to_process, pose_model, YOLO_model=None):
     # Crop out pedestrians
-    pedestrian_frames = crop_pedestrians(frame)
+    pedestrian_frames, xyxy_sets = crop_pedestrians(frame_to_process, model=YOLO_model)
 
     predictions = []
 
@@ -43,9 +33,10 @@ def process_one_frame(frame):
         key_coord_angles, pose_results = fa_pose.process_one_frame(
             pedestrian_frame,
             targets=targets,
-            model=pose
+            model=pose_model
         )
-        if key_coord_angles is None:
+
+        if key_coord_angles is None or pedestrian_frames is None:
             predictions.append("unknown")
             continue
 
@@ -62,11 +53,55 @@ def process_one_frame(frame):
                 text = "unknown"
 
         predictions.append(text)
-    return predictions
+    return predictions, xyxy_sets
+
+
+def render_one_frame(frame_to_render, predictions, xyxy_sets, wait=False):
+    for prediction, xyxy in zip(predictions, xyxy_sets):
+        cv2.putText(
+            frame_to_render,
+            prediction,
+            (int(xyxy[0]), int(xyxy[1])),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1,
+            (0, 255, 0),
+            2)
+        cv2.rectangle(
+            frame_to_render,
+            (int(xyxy[0]), int(xyxy[1])),
+            (int(xyxy[2]), int(xyxy[3])),
+            (0, 255, 0),
+            2
+        )
+
+    cv2.imshow("Test", frame_to_render)
+
+    if wait:
+        cv2.waitKey(90000)
 
 
 if __name__ == "__main__":
-    frame = cv2.imread("./data/test_parse_image/_test/test_img.png")
-    predictions = process_one_frame(frame)
-    for prediction in predictions:
-        print(prediction)
+
+    """ Models """
+    # Initialize Mediapipe Model
+    pose = mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
+
+    # Self-trained Classification Model
+    with open("./data/models/posture_classify.pkl", "rb") as f:
+        stc_model = pickle.load(f)
+
+    with open("./data/models/posture_classify_scaler.pkl", "rb") as fs:
+        stc_model_scaler = pickle.load(fs)
+
+    # YOLO Model
+    YOLOv5s_model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True).to('cuda')
+
+    # frame = cv2.imread("./data/test_parse_image/_test/test_img.png")
+    # predictions, xyxy_sets = process_one_frame(frame, pose, YOLOv5s_model)
+    # render_one_frame(frame, predictions, xyxy_sets, wait=True)
+
+    cap = cv2.VideoCapture("./data/test_parse_image/_test/test_video.mp4")
+    while cap.isOpened():
+        ret, frame = cap.read()
+        predictions, xyxy_sets = process_one_frame(frame, pose, YOLOv5s_model)
+        render_one_frame(frame, predictions, xyxy_sets, wait=True)
