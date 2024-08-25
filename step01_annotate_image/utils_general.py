@@ -1,5 +1,5 @@
 import cv2
-import config
+from . import config
 
 
 def get_detection_targets():

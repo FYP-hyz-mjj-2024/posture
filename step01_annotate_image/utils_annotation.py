@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 import mediapipe as mp
 
-import config
+from . import config
 
 
 class FrameAnnotatorUtils(ABC):
