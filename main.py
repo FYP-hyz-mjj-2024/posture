@@ -8,14 +8,14 @@ from step03_parse_image.parse_image import crop_pedestrians
 
 
 # Process One Frame
-def process_one_frame(frame_to_process, pose_model, YOLO_model=None):
+def process_one_frame(frame_to_process, pose_model, YOLO_model=None, wait=False):
     # Crop out pedestrians
     pedestrian_frames, xyxy_sets = crop_pedestrians(frame_to_process, model=YOLO_model)
 
     predictions = []
 
     # Process each subframe
-    for pedestrian_frame in pedestrian_frames:
+    for pedestrian_frame, xyxy in zip(pedestrian_frames, xyxy_sets):
         pedestrian_frame = cv2.cvtColor(pedestrian_frame, cv2.COLOR_RGB2BGR)
         key_coord_angles, pose_results = fa_pose.process_one_frame(
             pedestrian_frame,
@@ -40,6 +40,27 @@ def process_one_frame(frame_to_process, pose_model, YOLO_model=None):
                 text = "unknown"
 
         predictions.append(text)
+
+        cv2.putText(
+            frame_to_process,
+            text,
+            (int(xyxy[0]), int(xyxy[1])),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1,
+            (0, 255, 0),
+            2)
+        cv2.rectangle(
+            frame_to_process,
+            (int(xyxy[0]), int(xyxy[1])),
+            (int(xyxy[2]), int(xyxy[3])),
+            (0, 255, 0),
+            2
+        )
+
+        cv2.imshow("Test", frame_to_process)
+
+        if wait:
+            cv2.waitKey(90000)
     return predictions, xyxy_sets
 
 
@@ -101,6 +122,6 @@ if __name__ == "__main__":
     cap = cv2.VideoCapture("./data/test_parse_image/_test/test_video_short.mp4")
     while cap.isOpened():
         ret, frame = cap.read()
-        predictions, xyxy_sets = process_one_frame(frame, pose, YOLOv5s_model)
-        render_one_frame(frame, predictions, xyxy_sets, wait=False)
+        predictions, xyxy_sets = process_one_frame(frame, pose, YOLOv5s_model, wait=False)
+        # render_one_frame(frame, predictions, xyxy_sets, wait=False)
         cv2.waitKey(1)
