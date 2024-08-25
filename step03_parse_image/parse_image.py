@@ -31,8 +31,9 @@ def crop_pedestrians(img_matrix):
     return cropped_images
 
 
-img = cv2.imread("./data/_test/test_img.png")
-cropped_pedestrians = crop_pedestrians(img)
+if __name__ == "__main__":
+    img = cv2.imread("./data/_test/test_img.png")
+    cropped_pedestrians = crop_pedestrians(img)
 
-for idx, cropped_img in enumerate(cropped_pedestrians):
-    cv2.imwrite(f"./data/_test/cropped/{idx}.png", cv2.cvtColor(cropped_img, cv2.COLOR_RGB2BGR))
+    for idx, cropped_img in enumerate(cropped_pedestrians):
+        cv2.imwrite(f"./data/_test/cropped/{idx}.png", cv2.cvtColor(cropped_img, cv2.COLOR_RGB2BGR))
