@@ -12,7 +12,8 @@ def process_one_frame(frame_to_process, pose_model, YOLO_model=None, wait=False)
     # Crop out pedestrians
     pedestrian_frames, xyxy_sets = crop_pedestrians(frame_to_process, model=YOLO_model)
 
-    predictions = []
+    # Number of people
+    num_people = len(pedestrian_frames)
 
     # Process each subframe
     for pedestrian_frame, xyxy in zip(pedestrian_frames, xyxy_sets):
@@ -24,7 +25,7 @@ def process_one_frame(frame_to_process, pose_model, YOLO_model=None, wait=False)
         )
 
         if key_coord_angles is None or pedestrian_frames is None:
-            predictions.append("unknown")
+            # predictions.append("unknown")
             continue
 
         _numeric_data = np.array([kka['angle'] for kka in key_coord_angles]).reshape(1, -1)
@@ -39,7 +40,7 @@ def process_one_frame(frame_to_process, pose_model, YOLO_model=None, wait=False)
             case _:
                 text = "unknown"
 
-        predictions.append(text)
+        # predictions.append(text)
 
         cv2.putText(
             frame_to_process,
@@ -61,31 +62,7 @@ def process_one_frame(frame_to_process, pose_model, YOLO_model=None, wait=False)
 
         if wait:
             cv2.waitKey(90000)
-    return predictions, xyxy_sets
-
-
-def render_one_frame(frame_to_render, predictions, xyxy_sets, wait=False):
-    for prediction, xyxy in zip(predictions, xyxy_sets):
-        cv2.putText(
-            frame_to_render,
-            prediction,
-            (int(xyxy[0]), int(xyxy[1])),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            1,
-            (0, 255, 0),
-            2)
-        cv2.rectangle(
-            frame_to_render,
-            (int(xyxy[0]), int(xyxy[1])),
-            (int(xyxy[2]), int(xyxy[3])),
-            (0, 255, 0),
-            2
-        )
-
-    cv2.imshow("Test", frame_to_render)
-
-    if wait:
-        cv2.waitKey(90000)
+    return num_people
 
 
 if __name__ == "__main__":
@@ -122,6 +99,5 @@ if __name__ == "__main__":
     cap = cv2.VideoCapture("./data/test_parse_image/_test/test_video_short.mp4")
     while cap.isOpened():
         ret, frame = cap.read()
-        predictions, xyxy_sets = process_one_frame(frame, pose, YOLOv5s_model, wait=False)
-        # render_one_frame(frame, predictions, xyxy_sets, wait=False)
+        num_people = process_one_frame(frame, pose, YOLOv5s_model, wait=False)
         cv2.waitKey(1)
