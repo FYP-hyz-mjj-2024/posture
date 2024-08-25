@@ -6,19 +6,6 @@ import step01_annotate_image.utils_general as utils_general
 from step01_annotate_image.annotate_image import FrameAnnotatorPose, FrameAnnotatorPoseUtils
 from step03_parse_image.parse_image import crop_pedestrians
 
-# Initialize Detection Targets
-targets = utils_general.get_detection_targets()
-
-# Initialize Frame Annotator Tools
-fa_pose_utils = FrameAnnotatorPoseUtils()
-fa_pose = FrameAnnotatorPose(
-    general_utils=utils_general,
-    annotator_utils=fa_pose_utils
-)
-
-# Get Mediapipe Model Instance
-mp_drawing, mp_pose = fa_pose_utils.init_mp()
-
 
 # Process One Frame
 def process_one_frame(frame_to_process, pose_model, YOLO_model=None):
@@ -82,6 +69,20 @@ def render_one_frame(frame_to_render, predictions, xyxy_sets, wait=False):
 
 if __name__ == "__main__":
 
+    """ Utilities """
+    # Initialize Detection Targets
+    targets = utils_general.get_detection_targets()
+
+    # Initialize Frame Annotator Tools
+    fa_pose_utils = FrameAnnotatorPoseUtils()
+    fa_pose = FrameAnnotatorPose(
+        general_utils=utils_general,
+        annotator_utils=fa_pose_utils
+    )
+
+    # Get Mediapipe Model Instance
+    mp_drawing, mp_pose = fa_pose_utils.init_mp()
+
     """ Models """
     # Initialize Mediapipe Model
     pose = mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
@@ -96,12 +97,10 @@ if __name__ == "__main__":
     # YOLO Model
     YOLOv5s_model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True).to('cuda')
 
-    # frame = cv2.imread("./data/test_parse_image/_test/test_img.png")
-    # predictions, xyxy_sets = process_one_frame(frame, pose, YOLOv5s_model)
-    # render_one_frame(frame, predictions, xyxy_sets, wait=True)
-
-    cap = cv2.VideoCapture("./data/test_parse_image/_test/test_video.mp4")
+    """ Video """
+    cap = cv2.VideoCapture("./data/test_parse_image/_test/test_video_short.mp4")
     while cap.isOpened():
         ret, frame = cap.read()
         predictions, xyxy_sets = process_one_frame(frame, pose, YOLOv5s_model)
-        render_one_frame(frame, predictions, xyxy_sets, wait=True)
+        render_one_frame(frame, predictions, xyxy_sets, wait=False)
+        cv2.waitKey(1)
