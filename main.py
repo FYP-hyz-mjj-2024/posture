@@ -8,7 +8,13 @@ from step03_parse_image.parse_image import crop_pedestrians
 
 
 # Process One Frame
-def process_one_frame(frame_to_process, pose_model, YOLO_model=None, wait=False):
+def process_one_frame(
+        frame_to_process,
+        stc_model_and_scaler,
+        mp_pose_model,
+        YOLO_model=None,
+        wait=False):
+    stc_model, stc_model_scaler = stc_model_and_scaler
     # Crop out pedestrians
     pedestrian_frames, xyxy_sets = crop_pedestrians(frame_to_process, model=YOLO_model)
 
@@ -21,7 +27,7 @@ def process_one_frame(frame_to_process, pose_model, YOLO_model=None, wait=False)
         key_coord_angles, pose_results = fa_pose.process_one_frame(
             pedestrian_frame,
             targets=targets,
-            model=pose_model
+            model=mp_pose_model
         )
 
         if key_coord_angles is None or pedestrian_frames is None:
@@ -99,5 +105,11 @@ if __name__ == "__main__":
     cap = cv2.VideoCapture("./data/test_parse_image/_test/test_video_short.mp4")
     while cap.isOpened():
         ret, frame = cap.read()
-        num_people = process_one_frame(frame, pose, YOLOv5s_model, wait=False)
+        num_people = process_one_frame(
+            frame,
+            stc_model_and_scaler=[stc_model, stc_model_scaler],
+            mp_pose_model=pose,
+            YOLO_model=YOLOv5s_model,
+            wait=False
+        )
         cv2.waitKey(1)
