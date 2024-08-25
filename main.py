@@ -21,6 +21,9 @@ def process_one_frame(
     # Number of people
     num_people = len(pedestrian_frames)
 
+    if num_people <= 0:
+        return 0
+
     # Process each subframe
     for pedestrian_frame, xyxy in zip(pedestrian_frames, xyxy_sets):
         pedestrian_frame = cv2.cvtColor(pedestrian_frame, cv2.COLOR_RGB2BGR)
@@ -47,7 +50,6 @@ def process_one_frame(
                 text = "unknown"
 
         # predictions.append(text)
-
         cv2.putText(
             frame_to_process,
             text,
@@ -65,9 +67,6 @@ def process_one_frame(
         )
 
         cv2.imshow("Test", frame_to_process)
-
-        if wait:
-            cv2.waitKey(90000)
     return num_people
 
 
@@ -102,9 +101,13 @@ if __name__ == "__main__":
     YOLOv5s_model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True).to('cuda')
 
     """ Video """
-    cap = cv2.VideoCapture("./data/test_parse_image/_test/test_video_short.mp4")
+    cap = cv2.VideoCapture("./data/test_parse_image/_test/test_video.mp4")
     while cap.isOpened():
         ret, frame = cap.read()
+
+        if not ret:
+            continue
+
         num_people = process_one_frame(
             frame,
             stc_model_and_scaler=[stc_model, stc_model_scaler],
