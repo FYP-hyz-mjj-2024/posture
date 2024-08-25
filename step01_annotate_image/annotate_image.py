@@ -14,8 +14,8 @@ import numpy as np
 import pandas as pd
 
 # Local
-import utils_general as utils
-from utils_annotation import FrameAnnotatorPoseUtils
+from . import utils_general as utils
+from .utils_annotation import FrameAnnotatorPoseUtils
 
 
 class FrameAnnotator(ABC):
