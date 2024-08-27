@@ -2,6 +2,17 @@ import cv2
 import torch
 
 
+def get_pedestrians_xyxy_list(img_matrix_rgb, YOLO_model):
+    """
+    Use YOLO model to extract a list of frames in xyxy form.
+    :param img_matrix_rgb: Frame matrix that is been converted to RGB.
+    :param YOLO_model: YOLO model.
+    """
+    results_df = YOLO_model(img_matrix_rgb).pandas().xyxy[0]
+    pedestrians = results_df[results_df['name'] == 'person']
+    return pedestrians
+
+
 def crop_pedestrians(img_matrix, model):
     """
     Input an image with multiple-pedestrians, use YOLOv5s to extract sub-images
@@ -14,8 +25,9 @@ def crop_pedestrians(img_matrix, model):
     img_rgb = cv2.cvtColor(img_matrix, cv2.COLOR_BGR2RGB)
 
     # Extracts all the 4-d tuples corresponding to class 'person'
-    results_df = model(img_matrix).pandas().xyxy[0]
-    pedestrians = results_df[results_df['name'] == 'person']
+    # results_df = model(img_matrix).pandas().xyxy[0]
+    # pedestrians = results_df[results_df['name'] == 'person']
+    pedestrians = get_pedestrians_xyxy_list(img_rgb, model)
 
     # Store cropped images
     cropped_images = []
