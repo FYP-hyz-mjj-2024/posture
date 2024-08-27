@@ -3,6 +3,7 @@ import cv2
 import pickle
 import torch
 import numpy as np
+from ultralytics import YOLO
 
 # Local
 import step01_annotate_image.utils_general as utils_general
@@ -98,7 +99,8 @@ if __name__ == "__main__":
     targets = utils_general.get_detection_targets()
 
     # YOLO Model
-    YOLOv5s_model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True).to(device)
+    # YOLOv5s_model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True).to(device)
+    YOLOv5s_model = YOLO('yolov5s.pt')
     print(f"YOLO model initialized: Running on {device}")
 
     # Initialize Frame Annotator Tools
