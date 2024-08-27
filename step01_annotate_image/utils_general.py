@@ -2,6 +2,21 @@ import cv2
 from . import config
 
 
+def get_device_support(torch):
+    """
+    Using torch to detect GPU hardware.
+    :param torch: Pytorch package.
+    :return: Highest supported device.
+    """
+    if torch.cuda.is_available():
+        device = torch.device('cuda')
+    elif torch.backends.mps.is_available():
+        device = torch.device('mps')
+    else:
+        device = torch.device('cpu')
+    return device
+
+
 def get_detection_targets():
     return config.pose_targets
 

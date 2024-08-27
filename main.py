@@ -16,7 +16,7 @@ def process_one_frame(
         stc_model_and_scaler,
         mp_pose_model,
         YOLO_model=None,
-        display_skeletons=False):
+        device='cpu'):
     """
     Take a single frame. Use YOLO model to locate all the pedestrians. Then, for each retrieved
     pedestrian, feed it into mediapipe posture detection model to extract landmarks. After that,
@@ -27,11 +27,11 @@ def process_one_frame(
     :param stc_model_and_scaler: A tuple/array of the self-trained classification model and scaler.
     :param mp_pose_model: The mediapipe posture detection model.
     :param YOLO_model: The YOLO model for pedestrian location & image cropping.
-    :param display_skeletons: Display skeletons of the people.
+    :param device: GPU support.
     """
     stc_model, stc_model_scaler = stc_model_and_scaler
     # Crop out pedestrians
-    pedestrian_frames, xyxy_sets = crop_pedestrians(frame_to_process, model=YOLO_model)
+    pedestrian_frames, xyxy_sets = crop_pedestrians(frame_to_process, model=YOLO_model, device=device)
 
     # Number of people
     num_people = len(pedestrian_frames)
@@ -86,20 +86,15 @@ def process_one_frame(
 
 
 if __name__ == "__main__":
-    """ Device Support """
-    if torch.cuda.is_available():
-        device = torch.device('cuda')
-    elif torch.backends.mps.is_available():
-        device = torch.device('mps')
-    else:
-        device = torch.device('cpu')
-
     """ Utilities """
+    # Device Support
+    device = utils_general.get_device_support(torch)
+    print(f"Device is using {device}.")
+
     # Initialize Detection Targets
     targets = utils_general.get_detection_targets()
 
     # YOLO Model
-    # YOLOv5s_model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True).to(device)
     YOLOv5s_model = YOLO('yolov5s.pt')
     print(f"YOLO model initialized: Running on {device}")
 
@@ -130,7 +125,6 @@ if __name__ == "__main__":
     print(f"Pedestrian classification model initialized.")
 
     """ Video """
-    # cap = cv2.VideoCapture("./data/test_parse_image/_test/test_video.mp4")
     cap = cv2.VideoCapture(0)
     while cap.isOpened():
         ret, frame = cap.read()
@@ -142,7 +136,7 @@ if __name__ == "__main__":
             stc_model_and_scaler=[stc_model, stc_model_scaler],
             mp_pose_model=pose,
             YOLO_model=YOLOv5s_model,
-            display_skeletons=False
+            device=device
         )
 
         if utils_general.break_loop():
