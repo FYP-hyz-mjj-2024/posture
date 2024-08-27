@@ -119,7 +119,7 @@ if __name__ == "__main__":
     print(f"Self-Trained pedestrian classification model initialized.")
 
     """ Video """
-    cap = cv2.VideoCapture(0)
+    cap = utils_general.init_video_capture()
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
