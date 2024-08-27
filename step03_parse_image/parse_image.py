@@ -13,7 +13,7 @@ def get_pedestrians_xyxy_list(img_matrix_rgb, YOLO_model):
 
     xyxy_list = []
     for idx, row in pedestrians.iterrows():
-        xyxy_list.append(tuple(int(row[name]) for name in ['xmin', 'ymin', 'xmax', 'ymax']))
+        xyxy_list.append(list(int(row[name]) for name in ['xmin', 'ymin', 'xmax', 'ymax']))
     return xyxy_list
 
 
@@ -53,11 +53,11 @@ def crop_pedestrians(img_matrix, model):
 if __name__ == "__main__":
     YOLOv5s_model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True).to('cuda')
     img = cv2.imread("./data/_test/test_img.png")
-    cropped_pedestrians, _ = crop_pedestrians(img, YOLOv5s_model)
+    # cropped_pedestrians, _ = crop_pedestrians(img, YOLOv5s_model)
+    #
+    # for idx, cropped_img in enumerate(cropped_pedestrians):
+    #     cv2.imwrite(f"./data/_test/cropped/{idx}.png", cv2.cvtColor(cropped_img, cv2.COLOR_RGB2BGR))
 
-    for idx, cropped_img in enumerate(cropped_pedestrians):
-        cv2.imwrite(f"./data/_test/cropped/{idx}.png", cv2.cvtColor(cropped_img, cv2.COLOR_RGB2BGR))
-
-    # xyxy = get_pedestrians_xyxy_list(img, YOLO_model=YOLOv5s_model)
-    # for idx, row in enumerate(xyxy):
-    #     print(f"{idx}\n{row}\n")
+    xyxy = get_pedestrians_xyxy_list(img, YOLO_model=YOLOv5s_model)
+    for idx, row in enumerate(xyxy):
+        print(f"{idx}\n{row}\n")
