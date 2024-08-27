@@ -17,6 +17,7 @@ def get_pedestrians_xyxy_list(img_matrix_rgb, YOLO_model):
         xyxy_list.append(list(int(row[name]) for name in ['xmin', 'ymin', 'xmax', 'ymax']))
     return xyxy_list
 
+
 def get_pedestrians_xyxy_list_ultralytics(img_matrix_rgb, YOLO_model_u, device):
     result = YOLO_model_u(img_matrix_rgb, device=device)[0]
     # print(result)
@@ -26,6 +27,7 @@ def get_pedestrians_xyxy_list_ultralytics(img_matrix_rgb, YOLO_model_u, device):
 
     xyxy_list = [box.tolist() for box, class_ in zip(bboxes, classes) if YOLO_model_u.names[class_] == "person"]
     return xyxy_list
+
 
 def crop_pedestrians(img_matrix, model):
     """
@@ -50,12 +52,6 @@ def crop_pedestrians(img_matrix, model):
         xmin, ymin, xmax, ymax = xyxy
         cropped_img = img_rgb[ymin:ymax, xmin:xmax]
         cropped_images.append(cropped_img)
-
-    # for idx, row in xyxy_list.iterrows():
-    #     xmin, ymin, xmax, ymax = tuple(int(row[name]) for name in ['xmin', 'ymin', 'xmax', 'ymax'])
-    #     cropped_img = img_rgb[ymin:ymax, xmin:xmax]
-    #     cropped_images.append(cropped_img)
-    #     xyxy_sets.append([xmin, ymin, xmax, ymax])
 
     return cropped_images, xyxy_list
 
