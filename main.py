@@ -86,31 +86,27 @@ def process_one_frame(
 
 
 if __name__ == "__main__":
-    """ Utilities """
+    """ Utilities Initialization """
     # Device Support
     device = utils_general.get_device_support(torch)
     print(f"Device is using {device}.")
 
-    # Initialize Detection Targets
+    # Detection Targets
     targets = utils_general.get_detection_targets()
+    print(f"Successfully loaded target detection features.")
 
+    # Frame Annotator Tools
+    fa_pose_utils = FrameAnnotatorPoseUtils()
+    fa_pose = FrameAnnotatorPose(general_utils=utils_general, annotator_utils=fa_pose_utils)
+    print(f"Frame annotation utilities initialized.")
+
+    """ Models """
     # YOLO Model
     YOLOv5s_model = YOLO('yolov5s.pt')
     print(f"YOLO model initialized: Running on {device}")
 
-    # Initialize Frame Annotator Tools
-    fa_pose_utils = FrameAnnotatorPoseUtils()
-    fa_pose = FrameAnnotatorPose(
-        general_utils=utils_general,
-        annotator_utils=fa_pose_utils
-    )
-    print(f"Frame annotation utilities initialized.")
-
-    # Get Mediapipe Model Instance
-    mp_drawing, mp_pose = fa_pose_utils.init_mp()
-
-    """ Models """
     # Initialize Mediapipe Posture Detection Model
+    _, mp_pose = fa_pose_utils.init_mp()
     pose = mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
     print(f"Mediapipe pose detection model initialized.")
 
@@ -118,11 +114,9 @@ if __name__ == "__main__":
     # TODO: Increase Model Stability & Accuracy
     with open("./data/models/posture_classify.pkl", "rb") as f:
         stc_model = pickle.load(f)
-
     with open("./data/models/posture_classify_scaler.pkl", "rb") as fs:
         stc_model_scaler = pickle.load(fs)
-
-    print(f"Pedestrian classification model initialized.")
+    print(f"Self-Trained pedestrian classification model initialized.")
 
     """ Video """
     cap = cv2.VideoCapture(0)
