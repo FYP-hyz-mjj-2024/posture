@@ -44,6 +44,32 @@ def init_video_capture(code=0):
     return cap
 
 
+def render_detection_rectangle(frame, text, xyxy):
+    """
+    Render a common YOLO detection rectangle onto a frame with opencv.
+    :param frame: The video/stream frame to render onto.
+    :param text: The description of the detection target.
+    :param xyxy: The coordinates of the rectangle.
+    :returns: None.
+    """
+    cv2.putText(
+        frame,
+        text,
+        org=(int(xyxy[0]), int(xyxy[1])),
+        fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+        fontScale=1,
+        color=(0, 255, 0),
+        thickness=2
+    )
+    cv2.rectangle(
+        frame,
+        pt1=(int(xyxy[0]), int(xyxy[1])),
+        pt2=(int(xyxy[2]), int(xyxy[3])),
+        color=(0, 255, 0),
+        thickness=2
+    )
+
+
 def break_loop(show_preview=False):
     """
     To determine whether to break the while-loop.
