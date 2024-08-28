@@ -14,8 +14,12 @@ import numpy as np
 import pandas as pd
 
 # Local
-from . import utils_general as utils
-from .utils_annotation import FrameAnnotatorPoseUtils
+if __name__ == "__main__":
+    import utils_general as utils
+    from utils_annotation import FrameAnnotatorPoseUtils
+else:
+    from . import utils_general as utils
+    from .utils_annotation import FrameAnnotatorPoseUtils
 
 
 class FrameAnnotator(ABC):
