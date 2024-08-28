@@ -55,31 +55,16 @@ def process_one_frame(
         _numeric_data = np.array([kka['angle'] for kka in key_coord_angles]).reshape(1, -1)
         numeric_data = stc_model_scaler.transform(_numeric_data)
 
-        prediction = stc_model.predict(numeric_data)
-        match prediction:
+        prediction_boolean = stc_model.predict(numeric_data)
+        match prediction_boolean:
             case 0:
-                text = "not using"
+                prediction_text = "not using"
             case 1:
-                text = "using"
+                prediction_text = "using"
             case _:
-                text = "unknown"
+                prediction_text = "unknown"
 
-        # predictions.append(text)
-        cv2.putText(
-            frame_to_process,
-            text,
-            (int(xyxy[0]), int(xyxy[1])),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            1,
-            (0, 255, 0),
-            2)
-        cv2.rectangle(
-            frame_to_process,
-            (int(xyxy[0]), int(xyxy[1])),
-            (int(xyxy[2]), int(xyxy[3])),
-            (0, 255, 0),
-            2
-        )
+        utils_general.render_detection_rectangle(frame_to_process, prediction_text, xyxy)
 
         cv2.imshow("Smartphone Usage Detection", frame_to_process)
     return num_people
