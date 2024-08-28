@@ -1,13 +1,16 @@
 # Package
+import time
 import cv2
 import pickle
 import torch
 import numpy as np
 from ultralytics import YOLO
+import matplotlib.pyplot as plt
 
 # Local
 import step01_annotate_image.utils_general as utils_general
-from step01_annotate_image.annotate_image import FrameAnnotatorPose, FrameAnnotatorPoseUtils
+from step01_annotate_image.annotate_image import FrameAnnotatorPose
+from step01_annotate_image.utils_annotation import FrameAnnotatorPoseUtils
 from step03_parse_image.parse_image import crop_pedestrians
 
 
@@ -72,6 +75,19 @@ def process_one_frame(
     return num_people
 
 
+def plot_array(arr, config):
+    iterations = [i for i in range(len(arr))]
+    mean = np.mean(arr)
+    plt.plot(iterations, arr, label=f"Computation Time per Frame")
+    plt.plot(iterations, [mean for _ in range(len(arr))], label=f"Mean={mean}")
+    plt.title(config['title'])
+    plt.xlabel(config['x_name'])
+    plt.ylabel(config['y_name'])
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+
 if __name__ == "__main__":
     """ Utilities Initialization """
     # Device Support
@@ -107,11 +123,19 @@ if __name__ == "__main__":
 
     """ Video """
     cap = utils_general.init_video_capture()
+    # cap = utils_general.init_video_capture("./data/test_parse_image/_test/test_video.mp4")
+
+    # Performance Analysis
+    frame_time = []
+    frame_num_people = []
+    frame_ratio = []
+
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             continue
 
+        start_time = time.time()
         num_people = process_one_frame(
             frame,
             stc_model_and_scaler=[stc_model, stc_model_scaler],
@@ -119,6 +143,15 @@ if __name__ == "__main__":
             YOLO_model=YOLOv5s_model,
             device=device
         )
+        end_time = time.time()
+        frame_time.append(end_time - start_time)
+        frame_num_people.append(num_people)
+        frame_ratio.append(0 if num_people == 0 else (end_time - start_time) / num_people)
 
         if utils_general.break_loop():
             break
+
+    plot_array(frame_time, {'title': 'Frame Computation Time', 'x_name': 'Frame Number', 'y_name': 'Time (s)'})
+    plot_array(frame_num_people, {'title': 'Number of People', 'x_name': 'Frame Number', 'y_name': 'Number of People'})
+    plot_array(frame_ratio, {'title': 'Frame Computation Time / Number of People', 'x_name': 'Frame Number', 'y_name': 'Ratio'})
+
