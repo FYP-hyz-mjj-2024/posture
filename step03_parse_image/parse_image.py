@@ -8,7 +8,7 @@ def get_pedestrians_xyxy_list(img_matrix_rgb, YOLO_model_u, device):
     :param img_matrix_rgb: An image matrix from cv2.imread() that has been converted to RGB from BGR.
     :param YOLO_model_u: The YOLO model extracted from ultralytics
     """
-    result = YOLO_model_u(img_matrix_rgb, device=device)[0]
+    result = YOLO_model_u(img_matrix_rgb, classes=[0], device=device, conf=0.7, half=True)[0]
     bboxes = result.boxes.xyxy.cpu().numpy().astype("int")
     classes = result.boxes.cls.cpu().numpy().astype("int")
 
