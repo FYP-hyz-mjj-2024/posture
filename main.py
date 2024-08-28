@@ -42,6 +42,7 @@ def process_one_frame(
 
     # Process each subframe
     for pedestrian_frame, xyxy in zip(pedestrian_frames, xyxy_sets):
+        # Get the key angle array from a subframe.
         pedestrian_frame = cv2.cvtColor(pedestrian_frame, cv2.COLOR_RGB2BGR)
         key_coord_angles, pose_results = fa_pose.process_one_frame(
             pedestrian_frame,
@@ -53,8 +54,9 @@ def process_one_frame(
             continue
 
         _numeric_data = np.array([kka['angle'] for kka in key_coord_angles]).reshape(1, -1)
-        numeric_data = stc_model_scaler.transform(_numeric_data)
 
+        # Feed the normalized angle array into the self-trained model, get prediction.
+        numeric_data = stc_model_scaler.transform(_numeric_data)
         prediction_boolean = stc_model.predict(numeric_data)
         match prediction_boolean:
             case 0:
@@ -64,8 +66,8 @@ def process_one_frame(
             case _:
                 prediction_text = "unknown"
 
+        # Render the rectangle onto the main frame.
         utils_general.render_detection_rectangle(frame_to_process, prediction_text, xyxy)
-
         cv2.imshow("Smartphone Usage Detection", frame_to_process)
     return num_people
 
