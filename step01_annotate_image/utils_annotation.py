@@ -3,7 +3,10 @@ import cv2
 import numpy as np
 import mediapipe as mp
 
-from . import config
+if __name__ == 'utils_annotation':
+    import config
+else:
+    from . import config
 
 
 class FrameAnnotatorUtils(ABC):

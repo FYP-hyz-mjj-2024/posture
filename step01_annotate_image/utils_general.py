@@ -1,5 +1,9 @@
 import cv2
-from . import config
+
+if __name__ == 'utils_general':
+    import config
+else:
+    from . import config
 
 
 def get_device_support(torch):
