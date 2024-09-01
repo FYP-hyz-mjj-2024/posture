@@ -1,4 +1,5 @@
 # Package
+import functools
 import time
 import cv2
 import pickle
@@ -13,6 +14,7 @@ from step01_annotate_image.annotate_image import FrameAnnotatorPose
 from step01_annotate_image.utils_annotation import FrameAnnotatorPoseUtils
 from step03_parse_image.parse_image import crop_pedestrians
 
+# @functools.lru_cache()
 def annotate_one_person(
         frame_to_process,
         stc_model_and_scaler,
@@ -28,6 +30,7 @@ def annotate_one_person(
     :param xyxy: The coordinates of the subframe.
     :param mp_pose_model: The posture detection model.
     """
+
 
     # Extract self-trained classification model and scaler.
     stc_model, stc_model_scaler = stc_model_and_scaler
@@ -79,7 +82,9 @@ def process_one_frame(
     :param device: GPU support.
     """
     # Crop out pedestrians
+    start_time_YOLO = time.time()
     pedestrian_frames, xyxy_sets = crop_pedestrians(frame_to_process, model=YOLO_model, device=device)
+    time_YOLO = time.time() - start_time_YOLO
 
     if (pedestrian_frames is None) or (xyxy_sets is None):
         cv2.imshow("Smartphone Usage Detection", frame_to_process)
@@ -87,33 +92,40 @@ def process_one_frame(
 
     # Number of people
     num_people = len(pedestrian_frames)
-
     if num_people <= 0:
         cv2.imshow("Smartphone Usage Detection", frame_to_process)
-        return 0
+        return 0, [time_YOLO, 0]
 
     # Process each person (subframe)
     # Use lambda for-loops for better performance
+    start_time_classification = time.time()
     [annotate_one_person(frame_to_process, stc_model_and_scaler, mp_pose_model, pedestrian_frame, xyxy)
      for pedestrian_frame, xyxy in zip(pedestrian_frames, xyxy_sets)]
+    time_classification = time.time() - start_time_classification
 
     cv2.imshow("Smartphone Usage Detection", frame_to_process)
 
-    return num_people
+    return num_people, [time_YOLO, time_classification]
 
 
-def plot_array(arr, config):
-    iterations = [i for i in range(len(arr))]
-    mean = np.mean(arr)
-    plt.plot(iterations, arr, label=f"Computation Time per Frame")
-    plt.plot(iterations, [mean for _ in range(len(arr))], label=f"Mean={mean}")
+def plot_multiple_arrays(arrays, labels, config):
+    if not all(len(array) == len(arrays[0]) for array in arrays):
+        raise ValueError("All arrays must be the same length.")
+
+    plt.figure(figsize=(10, 6))
+    iterations = [i for i in range(len(arrays[0]))]
+
+    for arr, label in zip(arrays, labels):
+        mean = np.mean(arr)
+        plt.plot(iterations, arr, label=f"{label}")
+        plt.plot(iterations, [mean for _ in range(len(arr))], linestyle='--', label=f"{label} - Mean={mean:.2f}")
+
     plt.title(config['title'])
     plt.xlabel(config['x_name'])
     plt.ylabel(config['y_name'])
     plt.legend()
     plt.grid(True)
     plt.show()
-
 
 if __name__ == "__main__":
     """ Utilities Initialization """
@@ -153,9 +165,11 @@ if __name__ == "__main__":
     # cap = utils_general.init_video_capture("./data/test_parse_image/_test/test_video.mp4")
 
     # Performance Analysis
-    frame_time = []
-    frame_num_people = []
-    frame_ratio = []
+    report = {
+        'Total Time': [],
+        'YOLO Time': [],
+        'Classification Time': []
+    }
 
     while cap.isOpened():
         ret, frame = cap.read()
@@ -163,7 +177,7 @@ if __name__ == "__main__":
             continue
 
         start_time = time.time()
-        num_people = process_one_frame(
+        num_people, [time_YOLO, time_classification] = process_one_frame(
             frame,
             stc_model_and_scaler=[stc_model, stc_model_scaler],
             mp_pose_model=pose,
@@ -171,14 +185,17 @@ if __name__ == "__main__":
             device=device
         )
         end_time = time.time()
-        frame_time.append(end_time - start_time)
-        frame_num_people.append(num_people)
-        frame_ratio.append(0 if num_people == 0 else (end_time - start_time) / num_people)
+        report['Total Time'].append(end_time - start_time)
+        report['YOLO Time'].append(time_YOLO)
+        report['Classification Time'].append(time_classification)
 
         if utils_general.break_loop():
             break
 
-    plot_array(frame_time, {'title': 'Frame Computation Time', 'x_name': 'Frame Number', 'y_name': 'Time (s)'})
-    plot_array(frame_num_people, {'title': 'Number of People', 'x_name': 'Frame Number', 'y_name': 'Number of People'})
-    plot_array(frame_ratio, {'title': 'Frame Computation Time / Number of People', 'x_name': 'Frame Number', 'y_name': 'Ratio'})
+    plot_multiple_arrays(
+        # [frame_total_time, frame_time_YOLO, frame_time_classification],
+        list(report.values()),
+        report.keys(),
+        {'title': 'Frame Computation Time', 'x_name': 'Frame Number', 'y_name': 'Time (s)'})
+    # plot_array(frame_num_people, {'title': 'Number of People', 'x_name': 'Frame Number', 'y_name': 'Number of People'})
 
