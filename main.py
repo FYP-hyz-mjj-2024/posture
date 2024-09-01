@@ -13,6 +13,52 @@ from step01_annotate_image.annotate_image import FrameAnnotatorPose
 from step01_annotate_image.utils_annotation import FrameAnnotatorPoseUtils
 from step03_parse_image.parse_image import crop_pedestrians
 
+def annotate_one_person(
+        frame_to_process,
+        stc_model_and_scaler,
+        mp_pose_model,
+        pedestrian_frame,
+        xyxy):
+    """
+    Annotate a single person given in a single frame. Render the annotation results
+    onto the entire frame.
+    :param frame_to_process: The entire frame.
+    :param stc_model_and_scaler: The self-trained classification model and scaler.
+    :param pedestrian_frame: The subframe from the entire frame that contains the target person.
+    :param xyxy: The coordinates of the subframe.
+    :param mp_pose_model: The posture detection model.
+    """
+
+    # Extract self-trained classification model and scaler.
+    stc_model, stc_model_scaler = stc_model_and_scaler
+
+    # Get the key angle array from a subframe.
+    pedestrian_frame = cv2.cvtColor(pedestrian_frame, cv2.COLOR_RGB2BGR)
+    key_coord_angles, pose_results = fa_pose.process_one_frame(
+        pedestrian_frame,
+        targets=targets,
+        model=mp_pose_model
+    )
+
+    if key_coord_angles is None:
+        return
+
+    _numeric_data = np.array([kka['angle'] for kka in key_coord_angles]).reshape(1, -1)
+
+    # Feed the normalized angle array into the self-trained model, get prediction.
+    numeric_data = stc_model_scaler.transform(_numeric_data)
+    prediction_boolean = stc_model.predict(numeric_data)
+    match prediction_boolean:
+        case 0:
+            prediction_text = "not using"
+        case 1:
+            prediction_text = "using"
+        case _:
+            prediction_text = "unknown"
+
+    # Render the rectangle + predictions onto the main frame.
+    utils_general.render_detection_rectangle(frame_to_process, prediction_text, xyxy)
+
 
 def process_one_frame(
         frame_to_process,
@@ -32,9 +78,12 @@ def process_one_frame(
     :param YOLO_model: The YOLO model for pedestrian location & image cropping.
     :param device: GPU support.
     """
-    stc_model, stc_model_scaler = stc_model_and_scaler
     # Crop out pedestrians
     pedestrian_frames, xyxy_sets = crop_pedestrians(frame_to_process, model=YOLO_model, device=device)
+
+    if (pedestrian_frames is None) or (xyxy_sets is None):
+        cv2.imshow("Smartphone Usage Detection", frame_to_process)
+        return
 
     # Number of people
     num_people = len(pedestrian_frames)
@@ -43,35 +92,13 @@ def process_one_frame(
         cv2.imshow("Smartphone Usage Detection", frame_to_process)
         return 0
 
-    # Process each subframe
-    for pedestrian_frame, xyxy in zip(pedestrian_frames, xyxy_sets):
-        # Get the key angle array from a subframe.
-        pedestrian_frame = cv2.cvtColor(pedestrian_frame, cv2.COLOR_RGB2BGR)
-        key_coord_angles, pose_results = fa_pose.process_one_frame(
-            pedestrian_frame,
-            targets=targets,
-            model=mp_pose_model
-        )
+    # Process each person (subframe)
+    # Use lambda for-loops for better performance
+    [annotate_one_person(frame_to_process, stc_model_and_scaler, mp_pose_model, pedestrian_frame, xyxy)
+     for pedestrian_frame, xyxy in zip(pedestrian_frames, xyxy_sets)]
 
-        if key_coord_angles is None or pedestrian_frames is None:
-            continue
+    cv2.imshow("Smartphone Usage Detection", frame_to_process)
 
-        _numeric_data = np.array([kka['angle'] for kka in key_coord_angles]).reshape(1, -1)
-
-        # Feed the normalized angle array into the self-trained model, get prediction.
-        numeric_data = stc_model_scaler.transform(_numeric_data)
-        prediction_boolean = stc_model.predict(numeric_data)
-        match prediction_boolean:
-            case 0:
-                prediction_text = "not using"
-            case 1:
-                prediction_text = "using"
-            case _:
-                prediction_text = "unknown"
-
-        # Render the rectangle onto the main frame.
-        utils_general.render_detection_rectangle(frame_to_process, prediction_text, xyxy)
-        cv2.imshow("Smartphone Usage Detection", frame_to_process)
     return num_people
 
 

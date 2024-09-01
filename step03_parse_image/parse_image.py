@@ -12,7 +12,7 @@ def get_pedestrians_xyxy_list(img_matrix_rgb, YOLO_model_u, device):
         img_matrix_rgb,
         classes=[0],
         device=device,
-        conf=0.65,
+        # conf=0.65,
         half=True
     )[0]
     bboxes = result.boxes.xyxy.cpu().numpy().astype("int")
