@@ -86,14 +86,15 @@ def process_one_frame(
     time_YOLO = time.time() - start_time_YOLO
 
     if (pedestrian_frames is None) or (xyxy_sets is None):
-        cv2.imshow("Smartphone Usage Detection", frame_to_process)
-        return
+        # cv2.imshow("Smartphone Usage Detection", frame_to_process)
+        return frame_to_process, [0, time_YOLO, 0]
 
     # Number of people
     num_people = len(pedestrian_frames)
+
     if num_people <= 0:
-        cv2.imshow("Smartphone Usage Detection", frame_to_process)
-        return 0, [time_YOLO, 0]
+        # cv2.imshow("Smartphone Usage Detection", frame_to_process)
+        return frame_to_process, [0, time_YOLO, 0]
 
     # Process each person (subframe)
     # Use lambda for-loops for better performance
@@ -102,9 +103,9 @@ def process_one_frame(
      for pedestrian_frame, xyxy in zip(pedestrian_frames, xyxy_sets)]
     time_classification = time.time() - start_time_classification
 
-    cv2.imshow("Smartphone Usage Detection", frame_to_process)
+    # cv2.imshow("Smartphone Usage Detection", frame_to_process)
 
-    return num_people, [time_YOLO, time_classification]
+    return frame_to_process, [num_people, time_YOLO, time_classification]
 
 
 def plot_performance_report(arrays, labels, config):
@@ -183,7 +184,7 @@ if __name__ == "__main__":
             continue
 
         start_time = time.time()
-        num_people, [time_YOLO, time_classification] = process_one_frame(
+        processed_frame, [num_people, time_YOLO, time_classification] = process_one_frame(
             frame,
             stc_model_and_scaler=[stc_model, stc_model_scaler],
             mp_pose_model=pose,
@@ -193,6 +194,8 @@ if __name__ == "__main__":
         report['Total Time'].append(time.time() - start_time)
         report['YOLO Time'].append(time_YOLO)
         report['Classification Time'].append(time_classification)
+
+        cv2.imshow("Smartphone Usage Detection", processed_frame)
 
         if utils_general.break_loop():
             break
