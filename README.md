@@ -108,7 +108,11 @@ since mediapipe is weak in this part.
 Then, feed those sub-images into mediapipe one-by-one to get the skeletons of multiple people, thus the classification
 results (using cellphone or not).
 
-&emsp; **Performance Issue** For each frame of the video source, there are three different model instances running. (Probably more in the future :) )
+![model_application.png](project_documents%2FREADME_images%2Fmodel_application.png)
+
+### 3.1 Performance Analysis
+#### 3.1.1 Addressing the issue
+&emsp; For each frame of the video source, there are three different model instances running. (Probably more in the future :) )
 YOLOv5s (Temporary), Mediapipe Posture Detection Model, as well as our Self-Trained Classification Model. Therefore,
 computing in each frame is quite time & performance consuming. There are multiple measures to improve running 
 performance and reduce glitching.
@@ -124,15 +128,22 @@ performance and reduce glitching.
   - YOLOv5s: This is just a temporary solution. Further investigation will be conducted in attempt to find the lightest object detection model that could realize our tasks.
   - Self-Trained Classification Model: Train this model with different approaches for better performance.
 
-![model_application.png](project_documents%2FREADME_images%2Fmodel_application.png)
-
-&emsp; We used a 5-minute  live virtual cam stream pushing of Time Square in New York City to stress test the 
+#### 3.1.2 Stress Testing
+&emsp; We used a 5-minute live virtual cam stream pushing of Time Square in New York City to stress test the 
 performance of the machine. According to our experiment, the overall performance is dominated by the mediapipe instance
 (displayed as the "Classification Time" curve in the figure).
 
 Testing Source: https://www.youtube.com/watch?v=fR22wuArNQY&t=357s (~10:00 - ~15:00), using OBS Virtual Camera.
 
-![performance_analysis.png](project_documents%2FREADME_images%2Fperformance_analysis.png)
+![performance_analysis_stress.png](project_documents%2FREADME_images%2Fperformance_analysis_stress.png)
+
+#### 3.1.3 Regular Testing
+&emsp; We used the built-in webcam of the computer to perform regular testing. Compared to the performance in stress
+testing, regular testing gives us a higher framerate and a smaller difference between the time consumption of YOLO
+object detection and the mediapipe posture detection.
+
+Testing Source: Built-in Webcam.
+![performance_analysis_regular.png](project_documents%2FREADME_images%2Fperformance_analysis_regular.png)
 
 ### 3.1 Face Detection & Comparison
 **Main Focus on the next semester.**
