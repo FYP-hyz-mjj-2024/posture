@@ -122,6 +122,7 @@ performance and reduce glitching.
 - Software
   - Reduce looping for each frame. 
     - The ideal time complexity of this model is O(detection_target_num_per_person * people_num * frame_num).
+  - Use lambda for-loop instead of regular for-loop.
   - Reduce re-instantiation of models. Use closures & dependency injection instead.
   - Reduce useless function calls caused from over-encapsulation.
 - Models
@@ -133,7 +134,12 @@ performance and reduce glitching.
 performance of the machine. According to our experiment, the overall performance is dominated by the mediapipe instance
 (displayed as the "Classification Time" curve in the figure).
 
-Testing Source: https://www.youtube.com/watch?v=fR22wuArNQY&t=357s (~10:00 - ~15:00), using OBS Virtual Camera.
+Testing Source: 
+- https://www.youtube.com/watch?v=fR22wuArNQY&t=357s (~10:00 - ~15:00), using OBS Virtual Camera.
+
+Hardware Condition: 
+- GPU: Nvidia GeForce RTX 4060 Laptop
+- CPU: Intel Core i7-13650HX
 
 ![performance_analysis_stress.png](project_documents%2FREADME_images%2Fperformance_analysis_stress.png)
 
@@ -142,7 +148,13 @@ Testing Source: https://www.youtube.com/watch?v=fR22wuArNQY&t=357s (~10:00 - ~15
 testing, regular testing gives us a higher framerate and a smaller difference between the time consumption of YOLO
 object detection and the mediapipe posture detection.
 
-Testing Source: Built-in Webcam.
+Testing Source: 
+- Built-in Webcam.
+
+Hardware Condition: 
+- GPU: Nvidia GeForce RTX 4060 Laptop
+- CPU: Intel Core i7-13650HX
+
 ![performance_analysis_regular.png](project_documents%2FREADME_images%2Fperformance_analysis_regular.png)
 
 ### 3.1 Face Detection & Comparison
