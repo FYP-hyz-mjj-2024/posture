@@ -134,6 +134,32 @@ def plot_performance_report(arrays, labels, config):
     plt.show()
 
 
+def yield_video_feed(frame_to_yield, mode='local', title="", server_url="", requests=None):
+    """
+    Yield the video frame. Either using local mode, which will invoke an
+    opencv imshow window, or use the HTTP Streaming to the server.
+    :param frame_to_yield: The video frame.
+    :param mode: Yielding mode, either be 'local' or 'remote'.
+    :param title: The title of the local window.
+    :param server_url: The API url that receives the video stream pushing.
+    :param requests: The requests object.
+    """
+    if mode == 'local':
+        cv2.imshow(title, frame_to_yield)
+    elif mode == 'remote':
+        # TODO: Realize stream pushing to server.
+        # JPEG encode, convert to bytes
+        _, jpeg_encoded = cv2.imencode('.jpg', frame_to_yield)
+        jpeg_bytes = jpeg_encoded.tobytes()
+
+        # Push stream
+        response = requests.post(server_url, data=jpeg_bytes)
+        if response.status_code != 200:
+            print(f"Experiencing packet loss. Status code: {response.status_code}")
+    else:
+        raise ValueError("Video yielding mode should be either 'local' or 'remote'.")
+
+
 if __name__ == "__main__":
     """ Utilities Initialization """
     # Device Support
@@ -168,7 +194,7 @@ if __name__ == "__main__":
     print(f"Self-Trained pedestrian classification model initialized.")
 
     """ Video """
-    cap = utils_general.init_video_capture(0)
+    cap = utils_general.init_video_capture(1)
     # cap = utils_general.init_video_capture("./data/test_parse_image/_test/test_video.mp4")
 
     # Performance Analysis
@@ -195,7 +221,8 @@ if __name__ == "__main__":
         report['YOLO Time'].append(time_YOLO)
         report['Classification Time'].append(time_classification)
 
-        cv2.imshow("Smartphone Usage Detection", processed_frame)
+        # cv2.imshow("Smartphone Usage Detection", processed_frame)
+        yield_video_feed(processed_frame, mode='local', title="Smartphone Usage Detection")
 
         if utils_general.break_loop():
             break
