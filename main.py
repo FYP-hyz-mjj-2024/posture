@@ -31,13 +31,12 @@ def annotate_one_person(
     :param mp_pose_model: The posture detection model.
     """
 
-
     # Extract self-trained classification model and scaler.
     stc_model, stc_model_scaler = stc_model_and_scaler
 
     # Get the key angle array from a subframe.
     pedestrian_frame = cv2.cvtColor(pedestrian_frame, cv2.COLOR_RGB2BGR)
-    key_coord_angles, pose_results = fa_pose.process_one_frame(
+    key_coord_angles, _ = fa_pose.process_one_frame(
         pedestrian_frame,
         targets=targets,
         model=mp_pose_model
@@ -149,7 +148,7 @@ if __name__ == "__main__":
 
     # Initialize Mediapipe Posture Detection Model
     _, mp_pose = fa_pose_utils.init_mp()
-    pose = mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
+    pose = mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5, model_complexity=0)
     print(f"Mediapipe pose detection model initialized.")
 
     # Self-trained Classification Model

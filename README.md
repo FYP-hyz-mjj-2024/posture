@@ -126,6 +126,13 @@ performance and reduce glitching.
 
 ![model_application.png](project_documents%2FREADME_images%2Fmodel_application.png)
 
+&emsp; We used a 3-minute New-York Time Square live virtual cam stream pushing to stress test the performance of the
+machine. According to our experiment, the performance of the entire machine is dominated by the mediapipe instance.
+
+Testing Source: https://www.youtube.com/watch?v=fR22wuArNQY&t=357s (~1:10 - ~4:37), OBS Virtual Camera.
+
+![performance_analysis.png](project_documents%2FREADME_images%2Fperformance_analysis.png)
+
 ### 3.1 Face Detection & Comparison
 **Main Focus on the next semester.**
 &emsp; Since we are able to detect who is using the cellphone by restricting the self-trained model in a sub-frame from
