@@ -14,7 +14,7 @@ from step01_annotate_image.annotate_image import FrameAnnotatorPose
 from step01_annotate_image.utils_annotation import FrameAnnotatorPoseUtils
 from step03_parse_image.parse_image import crop_pedestrians
 
-# @functools.lru_cache()
+
 def annotate_one_person(
         frame_to_process,
         stc_model_and_scaler,
@@ -107,7 +107,13 @@ def process_one_frame(
     return num_people, [time_YOLO, time_classification]
 
 
-def plot_multiple_arrays(arrays, labels, config):
+def plot_performance_report(arrays, labels, config):
+    """
+    Plot the performance report.
+    :param arrays: The performance indications.
+    :param labels: The labels of each curve.
+    :param config: Plot configurations.
+    """
     if not all(len(array) == len(arrays[0]) for array in arrays):
         raise ValueError("All arrays must be the same length.")
 
@@ -125,6 +131,7 @@ def plot_multiple_arrays(arrays, labels, config):
     plt.legend()
     plt.grid(True)
     plt.show()
+
 
 if __name__ == "__main__":
     """ Utilities Initialization """
@@ -183,18 +190,25 @@ if __name__ == "__main__":
             YOLO_model=YOLOv5s_model,
             device=device
         )
-        end_time = time.time()
-        report['Total Time'].append(end_time - start_time)
+        report['Total Time'].append(time.time() - start_time)
         report['YOLO Time'].append(time_YOLO)
         report['Classification Time'].append(time_classification)
 
         if utils_general.break_loop():
             break
 
-    plot_multiple_arrays(
-        # [frame_total_time, frame_time_YOLO, frame_time_classification],
+    # Remove performance data of the first frame.
+    # Initialization takes significant time, bad for mean value.
+    report = {key: [0] + value[1:] for key, value in report.items()}
+
+    # Performance Report.
+    plot_performance_report(
         list(report.values()),
         report.keys(),
-        {'title': 'Frame Computation Time', 'x_name': 'Frame Number', 'y_name': 'Time (s)'})
-    # plot_array(frame_num_people, {'title': 'Number of People', 'x_name': 'Frame Number', 'y_name': 'Number of People'})
+        {
+            'title': 'Frame Computation Time',
+            'x_name': 'Frame Number',
+            'y_name': 'Time (s)'
+        }
+    )
 

@@ -126,10 +126,11 @@ performance and reduce glitching.
 
 ![model_application.png](project_documents%2FREADME_images%2Fmodel_application.png)
 
-&emsp; We used a 3-minute New-York Time Square live virtual cam stream pushing to stress test the performance of the
-machine. According to our experiment, the performance of the entire machine is dominated by the mediapipe instance.
+&emsp; We used a 5-minute  live virtual cam stream pushing of Time Square in New York City to stress test the 
+performance of the machine. According to our experiment, the overall performance is dominated by the mediapipe instance
+(displayed as the "Classification Time" curve in the figure).
 
-Testing Source: https://www.youtube.com/watch?v=fR22wuArNQY&t=357s (~1:10 - ~4:37), OBS Virtual Camera.
+Testing Source: https://www.youtube.com/watch?v=fR22wuArNQY&t=357s (~10:00 - ~15:00), using OBS Virtual Camera.
 
 ![performance_analysis.png](project_documents%2FREADME_images%2Fperformance_analysis.png)
 
