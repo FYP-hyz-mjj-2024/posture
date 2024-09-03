@@ -23,7 +23,7 @@ def annotate_one_person(
         stc_model_and_scaler,
         mp_pose_model,
         pedestrian_frame,
-        xyxy):
+        xyxy) -> None:
     """
     Annotate a single person given in a single frame. Render the annotation results
     onto the entire frame.
@@ -82,6 +82,7 @@ def process_one_frame(
     :param mp_pose_model: The mediapipe posture detection model.
     :param YOLO_model: The YOLO model for pedestrian location & image cropping.
     :param device: GPU support.
+    :return: Annotated Frame, [Number of People, YOLO consumption Time, Classification Consumption Time]
     """
     # Crop out pedestrians
     start_time_YOLO = time.time()
@@ -111,7 +112,7 @@ def process_one_frame(
     return frame_to_process, [num_people, time_YOLO, time_classification]
 
 
-def plot_performance_report(arrays, labels, config):
+def plot_performance_report(arrays, labels, config) -> None:
     """
     Plot the performance report.
     :param arrays: The performance indications.
@@ -137,38 +138,44 @@ def plot_performance_report(arrays, labels, config):
     plt.show()
 
 
-def yield_video_feed(frame_to_yield, mode='local', title="", server_url="", ws=None):
+def yield_video_feed(frame_to_yield, mode='local', title="", ws=None) -> None:
     """
     Yield the video frame. Either using local mode, which will invoke an
     opencv imshow window, or use the HTTP Streaming to the server.
     :param frame_to_yield: The video frame.
     :param mode: Yielding mode, either be 'local' or 'remote'.
     :param title: The title of the local window.
-    :param server_url: The API url that receives the video stream pushing.
-    :param requests: The requests object.
+    :param ws: The websocket object initialized with server_url.
     """
     if mode == 'local':
         cv2.imshow(title, frame_to_yield)
     elif mode == 'remote':
-        # TODO: Realize stream pushing to server.
+        if ws is None:
+            raise ValueError("WebSocket object is not initialized.")
         # JPEG encode, convert to bytes
         _, jpeg_encoded = cv2.imencode('.jpg', frame_to_yield)
         jpeg_bytes = jpeg_encoded.tobytes()
         jpeg_base64 = base64.b64encode(jpeg_bytes).decode('utf-8')
 
         # Send request
-        if ws:
-            ws.send(json.dumps({'message':jpeg_base64}))
-        else:
-            raise ValueError("WebSocket object is not initialized.")
+        ws.send(json.dumps({'message':jpeg_base64}))
     else:
         raise ValueError("Video yielding mode should be either 'local' or 'remote'.")
 
 
-def init_websocket(server_url):
-    ws=websocket.WebSocket()
-    ws.connect(server_url)
-    return ws
+def init_websocket(server_url) -> websocket.WebSocket | None:
+    """
+    Initialize a websocket object using the url of the server.
+    :param server_url: The url of the server.
+    """
+    try:
+        ws = websocket.WebSocket()
+        ws.connect(server_url)
+        return ws
+    except ConnectionRefusedError as e:
+        print(f"Connection to WebSocked Failed. The server might be closed. Error: {e}\n"
+              f"If you are using local mode, you can ignore this error.")
+        return None
 
 
 if __name__ == "__main__":
@@ -206,7 +213,6 @@ if __name__ == "__main__":
 
     """ Video """
     cap = utils_general.init_video_capture(0)
-    # cap = utils_general.init_video_capture("./data/test_parse_image/_test/test_video.mp4")
 
     # Performance Analysis
     report = {
@@ -216,8 +222,10 @@ if __name__ == "__main__":
     }
 
     # Initialize Web Socket
-    server_url = "ws://localhost:8080"
+    server_url = utils_general.get_websocket_server_url()
     ws = init_websocket(server_url)
+
+    # Video Frames
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
@@ -236,8 +244,8 @@ if __name__ == "__main__":
         report['Classification Time'].append(time_classification)
 
         # cv2.imshow("Smartphone Usage Detection", processed_frame)
-        # yield_video_feed(processed_frame, mode='local', title="Smartphone Usage Detection")
-        yield_video_feed(processed_frame, mode='remote', server_url=server_url, ws=ws)
+        yield_video_feed(processed_frame, mode='local', title="Smartphone Usage Detection")
+        # yield_video_feed(processed_frame, mode='remote', ws=ws)
 
         if utils_general.break_loop():
             break
