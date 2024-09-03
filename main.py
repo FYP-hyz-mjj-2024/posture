@@ -158,7 +158,7 @@ def yield_video_feed(frame_to_yield, mode='local', title="", server_url="", ws=N
 
         # Send request
         if ws:
-            ws.send(json.dumps({'mesage':jpeg_base64}))
+            ws.send(json.dumps({'message':jpeg_base64}))
         else:
             raise ValueError("WebSocket object is not initialized.")
     else:
