@@ -1,5 +1,8 @@
 # Package
+import base64
 import functools
+import websocket
+import json
 import time
 import cv2
 import pickle
@@ -134,7 +137,7 @@ def plot_performance_report(arrays, labels, config):
     plt.show()
 
 
-def yield_video_feed(frame_to_yield, mode='local', title="", server_url="", requests=None):
+def yield_video_feed(frame_to_yield, mode='local', title="", server_url="", ws=None):
     """
     Yield the video frame. Either using local mode, which will invoke an
     opencv imshow window, or use the HTTP Streaming to the server.
@@ -151,13 +154,21 @@ def yield_video_feed(frame_to_yield, mode='local', title="", server_url="", requ
         # JPEG encode, convert to bytes
         _, jpeg_encoded = cv2.imencode('.jpg', frame_to_yield)
         jpeg_bytes = jpeg_encoded.tobytes()
+        jpeg_base64 = base64.b64encode(jpeg_bytes).decode('utf-8')
 
-        # Push stream
-        response = requests.post(server_url, data=jpeg_bytes)
-        if response.status_code != 200:
-            print(f"Experiencing packet loss. Status code: {response.status_code}")
+        # Send request
+        if ws:
+            ws.send(json.dumps({'mesage':jpeg_base64}))
+        else:
+            raise ValueError("WebSocket object is not initialized.")
     else:
         raise ValueError("Video yielding mode should be either 'local' or 'remote'.")
+
+
+def init_websocket(server_url):
+    ws=websocket.WebSocket()
+    ws.connect(server_url)
+    return ws
 
 
 if __name__ == "__main__":
@@ -194,7 +205,7 @@ if __name__ == "__main__":
     print(f"Self-Trained pedestrian classification model initialized.")
 
     """ Video """
-    cap = utils_general.init_video_capture(1)
+    cap = utils_general.init_video_capture(0)
     # cap = utils_general.init_video_capture("./data/test_parse_image/_test/test_video.mp4")
 
     # Performance Analysis
@@ -204,6 +215,9 @@ if __name__ == "__main__":
         'Classification Time': []
     }
 
+    # Initialize Web Socket
+    server_url = "ws://localhost:8080"
+    ws = init_websocket(server_url)
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
@@ -222,7 +236,8 @@ if __name__ == "__main__":
         report['Classification Time'].append(time_classification)
 
         # cv2.imshow("Smartphone Usage Detection", processed_frame)
-        yield_video_feed(processed_frame, mode='local', title="Smartphone Usage Detection")
+        # yield_video_feed(processed_frame, mode='local', title="Smartphone Usage Detection")
+        yield_video_feed(processed_frame, mode='remote', server_url=server_url, ws=ws)
 
         if utils_general.break_loop():
             break
