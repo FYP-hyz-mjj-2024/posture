@@ -1,5 +1,7 @@
+# Shape of window.
 capture_shape = [640, 480]
 
+# Mediapipe options.
 opt = {
     "min_detection_confidence": 0.5,
     "min_tracking_confidence": 0.5,
@@ -8,6 +10,7 @@ opt = {
     "save_path": "./saves/tmp/"
 }
 
+# Pose code according to mediapipe.
 lm_pose = {
     "Nose": 0,
     "Left_eye_inner": 1,
@@ -44,6 +47,7 @@ lm_pose = {
     "Right_foot_index": 32,
 }
 
+# Detection Targets
 pose_targets = [
     # Arms
     [("Left_shoulder", "Left_wrist"), "Left_elbow"],
@@ -58,3 +62,6 @@ pose_targets = [
     [("Right_eye", "Right_ear"), "Right_eye_outer"],
     [("Left_eye", "Left_ear"), "Left_eye_outer"],
 ]
+
+# The server URL of the websocket destination of video stream pushing.
+websocket_server_url = "ws://localhost:8080"

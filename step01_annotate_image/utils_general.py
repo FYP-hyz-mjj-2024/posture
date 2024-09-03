@@ -24,6 +24,8 @@ def get_device_support(torch):
 def get_detection_targets():
     return config.pose_targets
 
+def get_websocket_server_url():
+    return config.websocket_server_url
 
 def init_image_capture(file_path):
     """
