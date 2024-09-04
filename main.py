@@ -1,7 +1,7 @@
 # Package
 import base64
 import functools
-import websocket
+# import websocket
 import json
 import time
 import cv2
@@ -163,19 +163,19 @@ def yield_video_feed(frame_to_yield, mode='local', title="", ws=None) -> None:
         raise ValueError("Video yielding mode should be either 'local' or 'remote'.")
 
 
-def init_websocket(server_url) -> websocket.WebSocket | None:
-    """
-    Initialize a websocket object using the url of the server.
-    :param server_url: The url of the server.
-    """
-    try:
-        ws = websocket.WebSocket()
-        ws.connect(server_url)
-        return ws
-    except ConnectionRefusedError as e:
-        print(f"Connection to WebSocked Failed. The server might be closed. Error: {e}\n"
-              f"If you are using local mode, you can ignore this error.")
-        return None
+# def init_websocket(server_url) -> websocket.WebSocket | None:
+#     """
+#     Initialize a websocket object using the url of the server.
+#     :param server_url: The url of the server.
+#     """
+#     try:
+#         ws = websocket.WebSocket()
+#         ws.connect(server_url)
+#         return ws
+#     except ConnectionRefusedError as e:
+#         print(f"Connection to WebSocked Failed. The server might be closed. Error: {e}\n"
+#               f"If you are using local mode, you can ignore this error.")
+#         return None
 
 
 if __name__ == "__main__":
@@ -223,7 +223,7 @@ if __name__ == "__main__":
 
     # Initialize Web Socket
     server_url = utils_general.get_websocket_server_url()
-    ws = init_websocket(server_url)
+    # ws = init_websocket(server_url)
 
     # Video Frames
     while cap.isOpened():

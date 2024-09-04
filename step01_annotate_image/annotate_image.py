@@ -35,7 +35,7 @@ class FrameAnnotator(ABC):
         This function may or may not show the rendered frame, depending on whether invoker has
         specified the parameter window_name.
         :param frame: A video frame or a picture frame.
-        :param model: The mediapipe detection YOLO_model.
+        :param model: The mediapipe detection model.
         :param targets: The intended detection targets.
         :return: The values of the detection targets, and the coordinates of all landmarks.
         """
