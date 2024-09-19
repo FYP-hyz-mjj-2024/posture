@@ -63,7 +63,11 @@ def annotate_one_person(
 
 
     # Render the rectangle + predictions onto the main frame.
-    utils_general.render_detection_rectangle(frame_to_process, prediction_text, xyxy)
+    utils_general.render_detection_rectangle(
+        frame_to_process,
+        prediction_text,
+        xyxy,
+        is_ok=(prediction_text != "using"))
 
 
 def process_one_frame(
@@ -212,7 +216,12 @@ if __name__ == "__main__":
     print(f"Self-Trained pedestrian classification model initialized.")
 
     """ Video """
-    cap = utils_general.init_video_capture(0)
+    try:
+        cap = utils_general.init_video_capture(0)
+    except Exception as e:
+        pass
+    finally:
+        cap = utils_general.init_video_capture(1)
 
     # Performance Analysis
     report = {
