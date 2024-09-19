@@ -61,8 +61,8 @@ if __name__ == '__main__':
     Prepare data
     """
     # Training data points
-    using = np.load("../data/train/using.npy")    # num_people x num_targets = 71 x 18
-    not_using = np.load("../data/train/not_using.npy")
+    using = np.load("../data/train/using_small.npy")    # num_people x num_targets = 71 x 18
+    not_using = np.load("../data/train/not_using_small.npy")
 
     # TODO: Temporary solution
     np.random.shuffle(using)

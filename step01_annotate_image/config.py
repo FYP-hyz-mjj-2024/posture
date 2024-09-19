@@ -61,14 +61,14 @@ pose_targets = [
     [("Left_eye_outer", "Nose"), "Left_shoulder"],
     [("Right_eye", "Right_ear"), "Right_eye_outer"],
     [("Left_eye", "Left_ear"), "Left_eye_outer"],
-    [("Left_shoulder", "Right_shoulder"), "Left_ear"],
-    [("Left_shoulder", "Right_shoulder"), "Right_ear"],
-
-    # Hand
-    [("Left_elbow", "Left_pinky"), "Left_wrist"],
-    [("Right_elbow", "Right_pinky"), "Right_wrist"],
-    [("Left_index", "Left_pinky"), "Left_wrist"],
-    [("Right_index", "Right_pinky"), "Right_wrist"],
+    # [("Left_shoulder", "Right_shoulder"), "Left_ear"],
+    # [("Left_shoulder", "Right_shoulder"), "Right_ear"],
+    #
+    # # Hand
+    # [("Left_elbow", "Left_pinky"), "Left_wrist"],
+    # [("Right_elbow", "Right_pinky"), "Right_wrist"],
+    # [("Left_index", "Left_pinky"), "Left_wrist"],
+    # [("Right_index", "Right_pinky"), "Right_wrist"],
 ]
 
 # The server URL of the websocket destination of video stream pushing.
