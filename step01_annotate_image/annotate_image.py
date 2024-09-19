@@ -97,13 +97,17 @@ class FrameAnnotatorPose(FrameAnnotator):
         mp_drawing, mp_pose = self.annotator_utils.init_mp()
 
         # Initialize an empty dataframe.
-        df_data = {}
+        # df_data = {}
+
+        # Initialize Feature Matrix
+        key_angles_multiple_people = []
 
         # Run through all the files.
         for root, _, files in os.walk(source_dir):
+
             for file_name in files:
                 # Annotate one image
-                if not file_name.endswith(".png"):
+                if not file_name.endswith(".jpg"):
                     continue
 
                 # Specify src path.
@@ -135,22 +139,19 @@ class FrameAnnotatorPose(FrameAnnotator):
                             key_coord_angle.pop("coord")
                             # key_coord_angle["labels"] = 0 if labels == "not_using" else 1
 
-                    # Save angle vector into dataframe.
-                    for key_angle in key_coord_angles:
-                        if key_angle["key"] not in df_data:
-                            df_data[key_angle["key"]] = [key_angle["angle"]]
-                        else:
-                            df_data[key_angle["key"]].append(key_angle["angle"])
+                        # Save angle vector into feature matrix.
+                        key_angles_single_person = [key_angle['angle'] for key_angle in key_coord_angles]
+                        key_angles_multiple_people.append(key_angles_single_person)
 
                 # TODO: This is weird. Need to fix.
-                if self.general_utils.break_loop(show_preview=True):
-                    continue
+                # if self.general_utils.break_loop(show_preview=True):
+                #     continue
+                cv2.waitKey(1)
 
-        # Save the dataframe into csv.
-        df = pd.DataFrame.from_dict(df_data)
-        df['labels'] = label
-        df.to_csv(des_file, index=False)
-        print(df)
+        # Save the dataframe into npy.
+        feature_matrix = np.array(key_angles_multiple_people)
+        np.save(des_file, feature_matrix)
+
 
     def demo(self, cap, targets, model_and_scaler=None):
         print("Starting pose demo...")
@@ -234,13 +235,17 @@ if __name__ == "__main__":
     """
     fa_pose.batch_annotate_images(
         source_dir="../data/train/img/using",
-        des_file="../data/train/using.csv",
+        des_file="../data/train/using.npy",
         targets=pose_targets,
         label=1)
 
     fa_pose.batch_annotate_images(
         source_dir="../data/train/img/not_using",
-        des_file="../data/train/not_using.csv",
+        des_file="../data/train/not_using.npy",
         targets=pose_targets,
         label=0)
+
+    test = np.load("../data/train/using.npy")
+
+    a = 1
 
