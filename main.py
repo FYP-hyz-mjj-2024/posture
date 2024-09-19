@@ -25,7 +25,8 @@ def annotate_one_person(
         stc_model_and_scaler,
         mp_pose_model,
         pedestrian_frame,
-        xyxy) -> None:
+        xyxy,
+        eval_func) -> None:
     """
     Annotate a single person given in a single frame. Render the annotation results
     onto the entire frame.
@@ -49,41 +50,14 @@ def annotate_one_person(
 
     _numeric_data = np.array([kka['angle'] for kka in key_coord_angles]).reshape(1, -1)
 
-    """
-    Neural Network
-    """
-    # numeric_data_tensor = torch.tensor(_numeric_data, dtype=torch.float32)
-    #
-    # with torch.no_grad():
-    #     outputs = stc_model_and_scaler(numeric_data_tensor)
-    #     predicted = torch.argmax(outputs, dim=1).item()
-    #
-    # match predicted:
-    #     case 0:
-    #         prediction_text = "not using"
-    #     case 1:
-    #         prediction_text = "using"
-    #     case _:
-    #         prediction_text = "unknown"
-
-    """
-    SVR
-    """
-    model, scaler = stc_model_and_scaler
-    numeric_data_scaled = scaler.transform(_numeric_data)
-    prediction = model.predict(numeric_data_scaled)[0]
-    if prediction > 0.5:
-        prediction_text = "using"
-    else:
-        prediction_text = "not using"
-
+    prediction_text, is_ok = eval_func(stc_model_and_scaler, _numeric_data) if eval_func is not None else "Evaluation function required."
 
     # Render the rectangle + predictions onto the main frame.
     utils_general.render_detection_rectangle(
         frame_to_process,
         prediction_text,
         xyxy,
-        is_ok=(prediction_text != "using"))
+        is_ok=is_ok)
 
 
 def process_one_frame(
@@ -91,7 +65,8 @@ def process_one_frame(
         stc_model_and_scaler,
         mp_pose_model,
         YOLO_model=None,
-        device='cpu'):
+        device='cpu',
+        eval_func=None):
     """
     Take a single frame. Use YOLO model to locate all the pedestrians. Then, for each retrieved
     pedestrian, feed it into mediapipe posture detection model to extract landmarks. After that,
@@ -124,7 +99,7 @@ def process_one_frame(
     # Process each person (subframe)
     # Use lambda for-loops for better performance
     start_time_classification = time.time()
-    [annotate_one_person(frame_to_process, stc_model_and_scaler, mp_pose_model, pedestrian_frame, xyxy)
+    [annotate_one_person(frame_to_process, stc_model_and_scaler, mp_pose_model, pedestrian_frame, xyxy, eval_func)
      for pedestrian_frame, xyxy in zip(pedestrian_frames, xyxy_sets)]
     time_classification = time.time() - start_time_classification
 
@@ -198,6 +173,47 @@ def init_websocket(server_url) -> websocket.WebSocket | None:
               f"If you are using local mode, you can ignore this error.")
         return None
 
+def evaluate_dt(stc_model_and_scaler, _numeric_data):
+    model, scaler = stc_model_and_scaler
+    numeric_data = scaler.transform(_numeric_data)
+    prediction = model.predict(numeric_data)
+    match prediction:
+        case 0:
+            prediction_text = "not using"
+        case 1:
+            prediction_text = "using"
+        case _:
+            prediction_text = "unknown"
+    return prediction_text + "(dt)", prediction_text != "using"
+
+def evaluate_svr(stc_model_and_scaler, _numeric_data):
+    model, scaler = stc_model_and_scaler
+    numeric_data_scaled = scaler.transform(_numeric_data)
+    prediction = model.predict(numeric_data_scaled)[0]
+    if prediction > 0.5:
+        prediction_text = "using"
+    else:
+        prediction_text = "not using"
+    return prediction_text + "(svr)", prediction_text != "using"
+
+def evaluate_nn(stc_model_and_scaler, _numeric_data):
+
+    numeric_data_tensor = torch.tensor(_numeric_data, dtype=torch.float32)
+
+    with torch.no_grad():
+        outputs = stc_model_and_scaler(numeric_data_tensor)
+        predicted = torch.argmax(outputs, dim=1).item()
+
+    match predicted:
+        case 0:
+            prediction_text = "not using"
+        case 1:
+            prediction_text = "using"
+        case _:
+            prediction_text = "unknown"
+
+    return prediction_text + "(nn)", prediction_text != "using"
+
 
 if __name__ == "__main__":
     """ Utilities Initialization """
@@ -215,6 +231,8 @@ if __name__ == "__main__":
     print(f"Frame annotation utilities initialized.")
 
     """ Models """
+    mode = "nn"
+
     # YOLO Model
     YOLOv5s_model = YOLO('yolov5s.pt')
     print(f"YOLO model initialized: Running on {device}")
@@ -225,12 +243,36 @@ if __name__ == "__main__":
     print(f"Mediapipe pose detection model initialized.")
 
     # Self-trained Classification Model
-    # nn_model = MLP(input_size=len(utils_general.get_detection_targets()), hidden_size=100, output_size=2)
-    # nn_model.load_state_dict(torch.load("./data/models/posture_nn.pth"))
-    # nn_model.eval()
 
+    # Candidate 1: Decision Tree
+    with open("./data/models/posture_classify.pkl", "rb") as f:
+        dt_model = pickle.load(f)
+    with open("./data/models/posture_classify_scaler.pkl", "rb") as fs:
+        dt_scaler = pickle.load(fs)
+
+    # Candidate 2: Neural Network
+    nn_model = MLP(input_size=len(utils_general.get_detection_targets()), hidden_size=100, output_size=2)
+    nn_model.load_state_dict(torch.load("./data/models/posture_nn.pth"))
+    nn_model.eval()
+
+    # Candidate 3: Support Vector Machine (SVR)
     svr_model = load("./data/models/posture_svr.joblib")
-    scaler = load("./data/models/posture_svr_scaler.joblib")
+    svr_scaler = load("./data/models/posture_svr_scaler.joblib")
+
+    load_model_kind = {
+        "dt": {
+            "model": [dt_model, dt_scaler],
+            "eval_func": evaluate_dt
+        },
+        "nn": {
+            "model": nn_model,
+            "eval_func": evaluate_nn
+        },
+        "svr":{
+            "model": [svr_model, svr_scaler],
+            "eval_func": evaluate_svr
+        }
+    }
 
     print(f"Self-Trained pedestrian classification model initialized.")
 
@@ -258,10 +300,11 @@ if __name__ == "__main__":
         start_time = time.time()
         processed_frame, [num_people, time_YOLO, time_classification] = process_one_frame(
             frame,
-            stc_model_and_scaler=[svr_model, scaler],
+            stc_model_and_scaler=load_model_kind[mode]['model'],
             mp_pose_model=pose,
             YOLO_model=YOLOv5s_model,
-            device=device
+            device=device,
+            eval_func=load_model_kind[mode]['eval_func']
         )
         report['Total Time'].append(time.time() - start_time)
         report['YOLO Time'].append(time_YOLO)
