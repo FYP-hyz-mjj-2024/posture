@@ -10,42 +10,27 @@ from sklearn.metrics import mean_squared_error
 import matplotlib.pyplot as plt
 import pickle
 
-
-def get_training_df(paths) -> pd.DataFrame:
-    """
-    Load the csv files from the given paths.
-    Merge and shuffle them to get a training dataframe.
-    :param paths: Paths to the csv files.
-    :return: Dataframe
-    """
-    start_df = None
-    for path in paths:
-        this_df = pd.read_csv(path)
-        if start_df is None:
-            start_df = this_df
-        else:
-            start_df = pd.concat([start_df, this_df])
-
-    df = start_df.sample(frac=1).reset_index(drop=True)
-    return df
-
-
 def train_model(limit_data_num=None, print_report=True):
 
-    """ Get Training Data"""
-    df = get_training_df(["../data/train/using.csv", "../data/train/not_using.csv"])
+    # Load Data
+    using = np.load("../data/train/using_small.npy")
+    not_using = np.load("../data/train/not_using_small.npy")
 
-    # Split the data into features and labels
-    x = df.iloc[:, :-1].values
-    y = df.iloc[:, -1].values
+    # TODO
+    np.random.shuffle(using)
+    using = using[:len(not_using) // 2]
 
-    # Split data into train and test
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
+    # Pre Process
+    X = np.vstack((using, not_using))
+    y = np.hstack((np.ones(len(using)), np.zeros(len(not_using))))
+
+    # Divide
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.40, random_state=1919810)
 
     # Standardize data
     scaler = StandardScaler()
-    x_train = scaler.fit_transform(x_train)
-    x_test = scaler.transform(x_test)
+    x_train = scaler.fit_transform(X_train)
+    x_test = scaler.transform(X_test)
 
     # Train the Model
     model = RandomForestClassifier(n_estimators=200, random_state=114514+1919)
@@ -66,7 +51,7 @@ def train_model(limit_data_num=None, print_report=True):
     return model, scaler, accuracy
 
 
-def batch_train_models(num_iter, preferred_accuracy=0.85):
+def batch_train_models(num_iter, preferred_accuracy=None):
     """
     Train YOLO_model numerous times separately, and select the best YOLO_model.
     The best YOLO_model is suggested to have a high yet mediocre accuracy.
@@ -102,13 +87,13 @@ def batch_train_models(num_iter, preferred_accuracy=0.85):
 
     # Select the YOLO_model with an accuracy that's closest to 0.85
     indexed_accuracies = list(enumerate(batch['accuracies']))
-    sorted_indexed_accuracies = sorted(indexed_accuracies, key=lambda x: abs(x[1] - preferred_accuracy))
+    sorted_indexed_accuracies = sorted(indexed_accuracies, key=lambda x: abs(x[1] - preferred_accuracy if preferred_accuracy is not None else mean))
     print(sorted_indexed_accuracies)
 
     return batch['models'][sorted_indexed_accuracies[0][0]], batch['scalers'][sorted_indexed_accuracies[0][0]]
 
 
-best_model, best_scaler = batch_train_models(num_iter=100, preferred_accuracy=0.87)
+best_model, best_scaler = batch_train_models(num_iter=100)
 with open('../data/models/posture_classify.pkl', 'wb') as f:
     pickle.dump(best_model, f)
 with open('../data/models/posture_classify_scaler.pkl', 'wb') as f:
