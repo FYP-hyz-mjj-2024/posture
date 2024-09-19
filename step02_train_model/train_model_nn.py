@@ -64,6 +64,10 @@ if __name__ == '__main__':
     using = np.load("../data/train/using.npy")    # num_people x num_targets = 71 x 18
     not_using = np.load("../data/train/not_using.npy")
 
+    # TODO: Temporary solution
+    np.random.shuffle(using)
+    using = using[:len(not_using)]
+
     # Normalize Data
     # Using Z-score normalization: mean(mu)=0, std_dev(sigma)=1
     X = np.vstack((using, not_using))

@@ -35,9 +35,6 @@ def annotate_one_person(
     :param mp_pose_model: The posture detection model.
     """
 
-    # Extract self-trained classification model and scaler.
-    # stc_model, stc_model_scaler = stc_model_and_scaler
-
     # Get the key angle array from a subframe.
     pedestrian_frame = cv2.cvtColor(pedestrian_frame, cv2.COLOR_RGB2BGR)
     key_coord_angles, _ = fa_pose.process_one_frame(
@@ -51,21 +48,6 @@ def annotate_one_person(
 
     _numeric_data = np.array([kka['angle'] for kka in key_coord_angles]).reshape(1, -1)
     numeric_data_tensor = torch.tensor(_numeric_data, dtype=torch.float32)
-
-    # Feed the normalized angle array into the self-trained model, get prediction.
-    # numeric_data = stc_model_scaler.transform(_numeric_data)
-    # prediction_boolean = stc_model.predict(numeric_data)
-    # match prediction_boolean:
-    #     case 0:
-    #         prediction_text = "not using"
-    #     case 1:
-    #         prediction_text = "using"
-    #     case _:
-    #         prediction_text = "unknown"
-
-    # nn_model = MLP(input_size=len(_numeric_data), hidden_size=100, output_size=2)
-    # nn_model.load_state_dict(torch.load("../data/models/posture_nn.pth"))
-    # nn_model.eval()
 
     with torch.no_grad():
         outputs = stc_model_and_scaler(numeric_data_tensor)
@@ -223,12 +205,6 @@ if __name__ == "__main__":
     print(f"Mediapipe pose detection model initialized.")
 
     # Self-trained Classification Model
-    # TODO: Increase Model Stability & Accuracy
-    with open("./data/models/posture_classify.pkl", "rb") as f:
-        stc_model = pickle.load(f)
-    with open("./data/models/posture_classify_scaler.pkl", "rb") as fs:
-        stc_model_scaler = pickle.load(fs)
-
     nn_model = MLP(input_size=len(utils_general.get_detection_targets()), hidden_size=100, output_size=2)
     nn_model.load_state_dict(torch.load("./data/models/posture_nn.pth"))
     nn_model.eval()
