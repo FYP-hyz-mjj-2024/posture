@@ -15,10 +15,10 @@ fa_pose_utils = FrameAnnotatorPoseUtils()
 # Inject Utilities to Annotator
 fa_pose = FrameAnnotatorPose(general_utils=utils, annotator_utils=fa_pose_utils)
 
-with open("../data/models/posture_classify.pkl", "rb") as f:
+with open("../data/models/posture_dt.pkl", "rb") as f:
     model = pickle.load(f)
 
-with open("../data/models/posture_classify_scaler.pkl", "rb") as fs:
+with open("../data/models/posture_dt_scaler.pkl", "rb") as fs:
     model_scaler = pickle.load(fs)
 
 cap = utils.init_video_capture(0)
