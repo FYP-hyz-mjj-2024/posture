@@ -11,6 +11,7 @@ import numpy as np
 from ultralytics import YOLO
 import matplotlib.pyplot as plt
 from step02_train_model.train_model_nn import MLP
+from joblib import load
 
 # Local
 import step01_annotate_image.utils_general as utils_general
@@ -47,19 +48,34 @@ def annotate_one_person(
         return
 
     _numeric_data = np.array([kka['angle'] for kka in key_coord_angles]).reshape(1, -1)
-    numeric_data_tensor = torch.tensor(_numeric_data, dtype=torch.float32)
 
-    with torch.no_grad():
-        outputs = stc_model_and_scaler(numeric_data_tensor)
-        predicted = torch.argmax(outputs, dim=1).item()
+    """
+    Neural Network
+    """
+    # numeric_data_tensor = torch.tensor(_numeric_data, dtype=torch.float32)
+    #
+    # with torch.no_grad():
+    #     outputs = stc_model_and_scaler(numeric_data_tensor)
+    #     predicted = torch.argmax(outputs, dim=1).item()
+    #
+    # match predicted:
+    #     case 0:
+    #         prediction_text = "not using"
+    #     case 1:
+    #         prediction_text = "using"
+    #     case _:
+    #         prediction_text = "unknown"
 
-    match predicted:
-        case 0:
-            prediction_text = "not using"
-        case 1:
-            prediction_text = "using"
-        case _:
-            prediction_text = "unknown"
+    """
+    SVR
+    """
+    model, scaler = stc_model_and_scaler
+    numeric_data_scaled = scaler.transform(_numeric_data)
+    prediction = model.predict(numeric_data_scaled)[0]
+    if prediction > 0.5:
+        prediction_text = "using"
+    else:
+        prediction_text = "not using"
 
 
     # Render the rectangle + predictions onto the main frame.
@@ -209,9 +225,12 @@ if __name__ == "__main__":
     print(f"Mediapipe pose detection model initialized.")
 
     # Self-trained Classification Model
-    nn_model = MLP(input_size=len(utils_general.get_detection_targets()), hidden_size=100, output_size=2)
-    nn_model.load_state_dict(torch.load("./data/models/posture_nn.pth"))
-    nn_model.eval()
+    # nn_model = MLP(input_size=len(utils_general.get_detection_targets()), hidden_size=100, output_size=2)
+    # nn_model.load_state_dict(torch.load("./data/models/posture_nn.pth"))
+    # nn_model.eval()
+
+    svr_model = load("./data/models/posture_svr.joblib")
+    scaler = load("./data/models/posture_svr_scaler.joblib")
 
     print(f"Self-Trained pedestrian classification model initialized.")
 
@@ -239,7 +258,7 @@ if __name__ == "__main__":
         start_time = time.time()
         processed_frame, [num_people, time_YOLO, time_classification] = process_one_frame(
             frame,
-            stc_model_and_scaler=nn_model,
+            stc_model_and_scaler=[svr_model, scaler],
             mp_pose_model=pose,
             YOLO_model=YOLOv5s_model,
             device=device
