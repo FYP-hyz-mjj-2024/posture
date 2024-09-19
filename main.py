@@ -231,7 +231,7 @@ if __name__ == "__main__":
     print(f"Frame annotation utilities initialized.")
 
     """ Models """
-    mode = "nn"
+    mode = "old_dt"
 
     # YOLO Model
     YOLOv5s_model = YOLO('yolov5s.pt')
@@ -250,6 +250,11 @@ if __name__ == "__main__":
     with open("data/models/posture_dt_scaler.pkl", "rb") as fs:
         dt_scaler = pickle.load(fs)
 
+    with open("data/models/posture_old_dt.pkl", "rb") as f:
+        old_dt_model = pickle.load(f)
+    with open("data/models/posture_old_dt_scaler.pkl", "rb") as fs:
+        old_dt_scaler = pickle.load(fs)
+
     # Candidate 2: Neural Network
     nn_model = MLP(input_size=len(utils_general.get_detection_targets()), hidden_size=100, output_size=2)
     nn_model.load_state_dict(torch.load("./data/models/posture_nn.pth"))
@@ -260,6 +265,10 @@ if __name__ == "__main__":
     svr_scaler = load("./data/models/posture_svr_scaler.joblib")
 
     load_model_kind = {
+        "old_dt":{
+            "model":[old_dt_model, old_dt_scaler],
+            "eval_func": evaluate_dt
+        },
         "dt": {
             "model": [dt_model, dt_scaler],
             "eval_func": evaluate_dt
