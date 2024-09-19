@@ -216,12 +216,8 @@ if __name__ == "__main__":
     print(f"Self-Trained pedestrian classification model initialized.")
 
     """ Video """
-    try:
-        cap = utils_general.init_video_capture(0)
-    except Exception as e:
-        pass
-    finally:
-        cap = utils_general.init_video_capture(1)
+
+    cap = utils_general.init_video_capture(0)
 
     # Performance Analysis
     report = {
