@@ -245,9 +245,9 @@ if __name__ == "__main__":
     # Self-trained Classification Model
 
     # Candidate 1: Decision Tree
-    with open("./data/models/posture_classify.pkl", "rb") as f:
+    with open("data/models/posture_dt.pkl", "rb") as f:
         dt_model = pickle.load(f)
-    with open("./data/models/posture_classify_scaler.pkl", "rb") as fs:
+    with open("data/models/posture_dt_scaler.pkl", "rb") as fs:
         dt_scaler = pickle.load(fs)
 
     # Candidate 2: Neural Network

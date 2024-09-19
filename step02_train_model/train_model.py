@@ -94,8 +94,8 @@ def batch_train_models(num_iter, preferred_accuracy=None):
 
 
 best_model, best_scaler = batch_train_models(num_iter=100)
-with open('../data/models/posture_classify.pkl', 'wb') as f:
+with open('../data/models/posture_dt.pkl', 'wb') as f:
     pickle.dump(best_model, f)
-with open('../data/models/posture_classify_scaler.pkl', 'wb') as f:
+with open('../data/models/posture_dt_scaler.pkl', 'wb') as f:
     pickle.dump(best_scaler, f)
 
