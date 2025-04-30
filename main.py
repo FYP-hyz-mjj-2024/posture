@@ -1,5 +1,6 @@
 # Package
 import base64
+from typing import Tuple
 import functools
 import websocket
 import json
@@ -10,6 +11,7 @@ import torch
 import numpy as np
 from ultralytics import YOLO
 import matplotlib.pyplot as plt
+from matplotlib import cm
 from step02_train_model.train_model_nn import MLP
 from joblib import load
 
@@ -26,7 +28,7 @@ def annotate_one_person(
         mp_pose_model,
         pedestrian_frame,
         xyxy,
-        eval_func) -> None:
+        eval_func) -> Tuple[float, float]:
     """
     Annotate a single person given in a single frame. Render the annotation results
     onto the entire frame.
@@ -39,6 +41,8 @@ def annotate_one_person(
 
     # Get the key angle array from a subframe.
     pedestrian_frame = cv2.cvtColor(pedestrian_frame, cv2.COLOR_RGB2BGR)
+
+    time_start = time.time()
     key_coord_angles, _ = fa_pose.process_one_frame(
         pedestrian_frame,
         targets=targets,
@@ -46,11 +50,14 @@ def annotate_one_person(
     )
 
     if key_coord_angles is None:
-        return
+        return 0, 0
 
     _numeric_data = np.array([kka['angle'] for kka in key_coord_angles]).reshape(1, -1)
+    time_mediapipe = time.time() - time_start
 
-    prediction_text, is_ok = eval_func(stc_model_and_scaler, _numeric_data) if eval_func is not None else "Evaluation function required."
+    time_start = time.time()
+    prediction_text, is_ok = eval_func(stc_model_and_scaler, _numeric_data)
+    time_posture = time.time() - time_start
 
     # Render the rectangle + predictions onto the main frame.
     utils_general.render_detection_rectangle(
@@ -58,6 +65,7 @@ def annotate_one_person(
         prediction_text,
         xyxy,
         is_ok=is_ok)
+    return time_mediapipe, time_posture
 
 
 def process_one_frame(
@@ -81,31 +89,32 @@ def process_one_frame(
     :return: Annotated Frame, [Number of People, YOLO consumption Time, Classification Consumption Time]
     """
     # Crop out pedestrians
-    start_time_YOLO = time.time()
+    time_start = time.time()
     pedestrian_frames, xyxy_sets = crop_pedestrians(frame_to_process, model=YOLO_model, device=device)
-    time_YOLO = time.time() - start_time_YOLO
+    t_bboxDet = time.time() - time_start
 
     if (pedestrian_frames is None) or (xyxy_sets is None):
         # cv2.imshow("Smartphone Usage Detection", frame_to_process)
-        return frame_to_process, [0, time_YOLO, 0]
+        return frame_to_process, [0, t_bboxDet, 0]
 
     # Number of people
     num_people = len(pedestrian_frames)
 
     if num_people <= 0:
         # cv2.imshow("Smartphone Usage Detection", frame_to_process)
-        return frame_to_process, [0, time_YOLO, 0]
+        return frame_to_process, [0, t_bboxDet, 0]
 
     # Process each person (subframe)
     # Use lambda for-loops for better performance
-    start_time_classification = time.time()
-    [annotate_one_person(frame_to_process, stc_model_and_scaler, mp_pose_model, pedestrian_frame, xyxy, eval_func)
+    # start_time_classification = time.time()
+
+    times = [annotate_one_person(frame_to_process, stc_model_and_scaler, mp_pose_model, pedestrian_frame, xyxy, eval_func)
      for pedestrian_frame, xyxy in zip(pedestrian_frames, xyxy_sets)]
-    time_classification = time.time() - start_time_classification
 
-    # cv2.imshow("Smartphone Usage Detection", frame_to_process)
+    t_mediapipe = np.sum([t[0] for t in times])
+    t_posture = np.sum([t[0] for t in times])
 
-    return frame_to_process, [num_people, time_YOLO, time_classification]
+    return frame_to_process, [t_bboxDet, t_mediapipe, t_posture]
 
 
 def plot_performance_report(arrays, labels, config) -> None:
@@ -121,10 +130,17 @@ def plot_performance_report(arrays, labels, config) -> None:
     plt.figure(figsize=(10, 6))
     iterations = [i for i in range(len(arrays[0]))]
 
-    for arr, label in zip(arrays, labels):
-        mean = np.mean(arr)
-        plt.plot(iterations, arr, label=f"{label}")
-        plt.plot(iterations, [mean for _ in range(len(arr))], linestyle='--', label=f"{label} - Mean={mean:.2f}")
+    cmap = cm.get_cmap(config.get('colormap', 'tab20b'), 3 * len(arrays))
+
+    for i, (arr, label) in enumerate(zip(arrays, labels)):
+        this_color = cmap(i)
+        appl_mean = np.mean(arr)
+        perf_mean = np.mean(arr, where=(arr > 1e-5))
+        plt.plot(iterations, arr, label=f"{label}", color=this_color)
+        plt.plot(iterations, [appl_mean for _ in range(len(arr))],
+                 linestyle='--', color=this_color, label=f"{label} - Appl Mean={appl_mean:.3f}")
+        plt.plot(iterations, [perf_mean for _ in range(len(arr))],
+                 linestyle=':', color=this_color, label=f"{label} - Perf Mean={perf_mean:.3f}")
 
     plt.title(config['title'])
     plt.xlabel(config['x_name'])
@@ -287,13 +303,14 @@ if __name__ == "__main__":
 
     """ Video """
 
-    cap = utils_general.init_video_capture(0)
+    cap = utils_general.init_video_capture(1)
 
     # Performance Analysis
     report = {
         'Total Time': [],
-        'YOLO Time': [],
-        'Classification Time': []
+        'bboxDet': [],
+        'mediapipe': [],
+        'posture': []
     }
 
     # Initialize Web Socket
@@ -307,7 +324,7 @@ if __name__ == "__main__":
             continue
 
         start_time = time.time()
-        processed_frame, [num_people, time_YOLO, time_classification] = process_one_frame(
+        processed_frame, [time_bboxDet, time_Mediapipe, time_posture] = process_one_frame(
             frame,
             stc_model_and_scaler=load_model_kind[mode]['model'],
             mp_pose_model=pose,
@@ -316,8 +333,9 @@ if __name__ == "__main__":
             eval_func=load_model_kind[mode]['eval_func']
         )
         report['Total Time'].append(time.time() - start_time)
-        report['YOLO Time'].append(time_YOLO)
-        report['Classification Time'].append(time_classification)
+        report['bboxDet'].append(time_bboxDet)
+        report['mediapipe'].append(time_Mediapipe)
+        report['posture'].append(time_posture)
 
         # cv2.imshow("Smartphone Usage Detection", processed_frame)
         yield_video_feed(processed_frame, mode='local', title="Smartphone Usage Detection")
@@ -332,7 +350,7 @@ if __name__ == "__main__":
 
     # Performance Report.
     plot_performance_report(
-        list(report.values()),
+        np.array(list(report.values())),
         report.keys(),
         {
             'title': 'Frame Computation Time',
